@@ -1,4 +1,9 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tonic_build::compile_protos("astria-proto/execution/execution.proto")?;
+    let protos = vec!["astria-proto/execution/execution.proto"];
+
+    for proto in protos {
+        tonic_build::compile_protos(proto)?;
+    }
+
     Ok(())
 }
