@@ -1,9 +1,10 @@
+use clap::Parser;
 use std::time::Duration;
 
 use tokio::{signal, time};
 
 use crate::alert::Alert;
-use crate::cli::args;
+use crate::cli::Cli;
 use crate::conf::Conf;
 use crate::driver::DriverCommand;
 use crate::error::*;
@@ -22,21 +23,14 @@ async fn main() -> Result<()> {
     // logs
     logger::initialize();
 
-    // parse args
-    let matches = args::parse_args();
-    let base_url = matches.get_one::<String>("url").expect("url required");
-    let namespace_id = matches
-        .get_one::<String>("namespace_id")
-        .expect("namespace id required");
-    let rpc_address = matches
-        .get_one::<String>("rpc_address")
-        .expect("RPC address required");
+    // parse cli args
+    let args = Cli::parse();
 
     // configuration
     let conf = Conf::new(
-        base_url.to_owned(),
-        namespace_id.to_owned(),
-        rpc_address.to_owned(),
+        args.url,
+        args.namespace_id,
+        args.rpc_address,
     );
     log::info!("Using node at {}", conf.celestia_node_url);
 
