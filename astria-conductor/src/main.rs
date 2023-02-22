@@ -1,7 +1,6 @@
-use clap::Parser;
 use std::time::Duration;
 
-use astria_rpc::ExecutionRpcClient;
+use clap::Parser;
 use tokio::{signal, time};
 
 use crate::alert::Alert;
@@ -31,18 +30,8 @@ async fn main() -> Result<()> {
     let conf = Conf::new(args.url, args.namespace_id, args.rpc_address);
     log::info!("Using node at {}", conf.celestia_node_url);
 
-    // TODO - handle error properly
-    // TODO - actually implement. this is just poc.
-    let mut execution_rpc_client = ExecutionRpcClient::new(&conf.rpc_address).await.expect("uh oh");
-    let fake_header: Vec<u8> = vec![0, 1, 255];
-    let fake_tx: Vec<Vec<u8>> = vec![vec![0, 1, 255], vec![1, 2, 3], vec![1, 0, 1, 1]];
-    execution_rpc_client
-        .do_block(fake_header, fake_tx)
-        .await
-        .expect("uh oh do block");
-
     // spawn our driver
-    let (mut driver_handle, mut alert_rx) = driver::spawn(conf)?;
+    let (mut driver_handle, mut alert_rx) = driver::spawn(conf).await?;
 
     // NOTE - this will most likely be replaced by an RPC server that will receive gossip
     //  messages from the sequencer

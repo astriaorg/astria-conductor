@@ -14,9 +14,9 @@ use crate::{
 };
 
 /// Spawns a new Driver and wraps it up nicely with a DriverHandle
-pub fn spawn(conf: Conf) -> Result<(DriverHandle, AlertReceiver)> {
+pub async fn spawn(conf: Conf) -> Result<(DriverHandle, AlertReceiver)> {
     let (alert_tx, alert_rx) = mpsc::unbounded_channel();
-    let (mut driver, tx) = Driver::new(conf, alert_tx)?;
+    let (mut driver, tx) = Driver::new(conf, alert_tx).await?;
 
     let join_handle = task::spawn(async move { driver.run().await });
 
@@ -90,9 +90,9 @@ pub(crate) struct Driver {
 }
 
 impl Driver {
-    fn new(conf: Conf, alert_tx: AlertSender) -> Result<(Self, Sender)> {
+    async fn new(conf: Conf, alert_tx: AlertSender) -> Result<(Self, Sender)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
-        let (executor_join_handle, executor_tx) = executor::spawn(&conf, cmd_tx.clone())?;
+        let (executor_join_handle, executor_tx) = executor::spawn(&conf, cmd_tx.clone()).await?;
         let (reader_join_handle, reader_tx) =
             reader::spawn(&conf, cmd_tx.clone(), executor_tx.clone())?;
 
