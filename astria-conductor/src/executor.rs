@@ -70,7 +70,7 @@ impl Executor {
         Ok(())
     }
 
-    /// Uses abci to submit blocks to an evm
+    /// Uses RPC to send block to execution service
     async fn execute_block(&mut self, _block: NamespacedDataResponse) -> Result<()> {
         Ok(())
     }
