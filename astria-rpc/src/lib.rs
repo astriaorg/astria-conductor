@@ -1,3 +1,3 @@
-pub use client::RpcClient;
+pub use execution_client::ExecutionRpcClient;
 
-pub mod client;
+pub mod execution_client;

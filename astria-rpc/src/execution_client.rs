@@ -7,11 +7,13 @@ pub mod execution {
     tonic::include_proto!("execution");
 }
 
-pub struct RpcClient {
+/// Represents an RpcClient
+pub struct ExecutionRpcClient {
+    /// The actual rpc client
     client: ExecutionServiceClient<Channel>,
 }
 
-impl RpcClient {
+impl ExecutionRpcClient {
     /// Creates a new RPC Client
     ///
     /// # Arguments
@@ -19,7 +21,7 @@ impl RpcClient {
     /// * `address` - The address of the RPC server that we want to communicate with.
     pub async fn new(address: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let client = ExecutionServiceClient::connect(address.to_owned()).await?;
-        Ok(RpcClient { client })
+        Ok(ExecutionRpcClient { client })
     }
 
     /// Calls remote procedure DoBlock
