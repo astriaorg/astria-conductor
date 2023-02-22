@@ -1,6 +1,6 @@
 [workspace]
 members = [
     "astria-conductor",
-    "astria-proto",
+    "astria-rpc",
 ]
 default-members = ["astria-conductor"]
