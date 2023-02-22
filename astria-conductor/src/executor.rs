@@ -50,10 +50,10 @@ struct Executor {
 
 impl Executor {
     /// Creates a new Executor instance and returns a command sender and an alert receiver.
-    async fn new(_conf: &Conf, driver_tx: driver::Sender) -> Result<(Self, Sender)> {
+    async fn new(conf: &Conf, driver_tx: driver::Sender) -> Result<(Self, Sender)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
 
-        let execution_rpc_client = ExecutionRpcClient::new("https://[::1]:50051")
+        let execution_rpc_client = ExecutionRpcClient::new(&conf.rpc_address)
             .await
             .expect("uh oh");
 
