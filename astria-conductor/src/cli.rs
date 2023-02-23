@@ -2,20 +2,15 @@ use clap::Parser;
 
 #[derive(Parser)]
 pub(crate) struct Cli {
-    #[arg(short = 'u', long = "url", help = "URL of the data layer server.")]
-    pub url: String,
+    /// URL of the data layer server.
+    #[arg(long = "url")]
+    pub(crate) url: String,
 
-    #[arg(
-        short = 'n',
-        long = "namespace_id",
-        help = "Namespace ID as a string; the hex encoding of a [u8; 8]"
-    )]
-    pub namespace_id: String,
+    /// Namespace ID as a string; the hex encoding of a [u8; 8]
+    #[arg(long = "namespace-id")]
+    pub(crate) namespace_id: String,
 
-    #[arg(
-        short = 'r',
-        long = "rpc_address",
-        help = "Address of the execution RPC server."
-    )]
-    pub rpc_address: String,
+    /// Address of the execution RPC server.
+    #[arg(long = "rpc-address")]
+    pub(crate) rpc_address: String,
 }
