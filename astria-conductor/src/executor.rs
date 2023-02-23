@@ -53,6 +53,7 @@ impl Executor {
     async fn new(conf: &Conf, driver_tx: driver::Sender) -> Result<(Self, Sender)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
 
+        // TODO - error handling
         let execution_rpc_client = ExecutionRpcClient::new(&conf.rpc_address)
             .await
             .expect("uh oh");
