@@ -30,7 +30,7 @@ impl ExecutionRpcClient {
     ///
     /// * `header` - Header of the block
     /// * `transactions` - List of transactions
-    pub async fn do_block(
+    pub async fn call_do_block(
         &mut self,
         header: Vec<u8>,
         transactions: Vec<Vec<u8>>,

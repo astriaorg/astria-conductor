@@ -93,7 +93,7 @@ impl Executor {
         let fake_header: Vec<u8> = vec![0, 1, 255];
         let fake_tx: Vec<Vec<u8>> = vec![vec![0, 1, 255], vec![1, 2, 3], vec![1, 0, 1, 1]];
         self.execution_rpc_client
-            .do_block(fake_header, fake_tx)
+            .call_do_block(fake_header, fake_tx)
             .await
             .expect("uh oh do block");
 
