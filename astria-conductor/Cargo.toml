@@ -10,6 +10,6 @@ astria-rpc = { path = "../astria-rpc" }
 clap = { version = "4.1.4", features = ["derive"] }
 flexi_logger = "0.24.2"
 log = "0.4.17"
-rs-cnc = { git = "https://github.com/astriaorg/rs-cnc", version = "0.1.0" }
+rs-cnc = { git = "https://github.com/astriaorg/rs-cnc", rev = "e0b45d6" }
 thiserror = "1.0.38"
 tokio = { version = "1.25.0", features = ["macros", "rt-multi-thread", "signal"] }
