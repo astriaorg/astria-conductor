@@ -1,7 +1,9 @@
+use color_eyre::eyre::Result;
+use tonic::transport::Channel;
+
 use execution::{
     execution_service_client::ExecutionServiceClient, DoBlockRequest, DoBlockResponse,
 };
-use tonic::transport::Channel;
 
 pub mod execution {
     tonic::include_proto!("execution");
@@ -19,7 +21,7 @@ impl ExecutionRpcClient {
     /// # Arguments
     ///
     /// * `address` - The address of the RPC server that we want to communicate with.
-    pub async fn new(address: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn new(address: &str) -> Result<Self> {
         let client = ExecutionServiceClient::connect(address.to_owned()).await?;
         Ok(ExecutionRpcClient { client })
     }
@@ -34,7 +36,7 @@ impl ExecutionRpcClient {
         &mut self,
         header: Vec<u8>,
         transactions: Vec<Vec<u8>>,
-    ) -> Result<DoBlockResponse, Box<dyn std::error::Error>> {
+    ) -> Result<DoBlockResponse> {
         let request = DoBlockRequest {
             header,
             transactions,

@@ -1,3 +1,4 @@
+use color_eyre::eyre::Result;
 use rs_cnc::{CelestiaNodeClient, NamespacedDataResponse};
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
@@ -5,7 +6,7 @@ use tokio::{
 };
 
 use crate::conf::Conf;
-use crate::{driver, error::*, executor};
+use crate::{driver, executor};
 
 pub(crate) type JoinHandle = task::JoinHandle<Result<()>>;
 

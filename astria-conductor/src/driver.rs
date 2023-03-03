@@ -1,6 +1,7 @@
 //! The driver is the top-level coordinator that runs and manages all the components
 //! necessary for this reader/validator.
 
+use color_eyre::eyre::Result;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tokio::task;
 
@@ -9,7 +10,6 @@ use crate::reader::ReaderCommand;
 use crate::{
     alert::{AlertReceiver, AlertSender},
     conf::Conf,
-    error::*,
     executor, reader,
 };
 

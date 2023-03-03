@@ -1,3 +1,4 @@
+use color_eyre::eyre::Result;
 use rs_cnc::NamespacedDataResponse;
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
@@ -7,7 +8,7 @@ use tokio::{
 use astria_rpc::ExecutionRpcClient;
 
 use crate::conf::Conf;
-use crate::{driver, error::*};
+use crate::driver;
 
 pub(crate) type JoinHandle = task::JoinHandle<Result<()>>;
 

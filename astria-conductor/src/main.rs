@@ -1,19 +1,18 @@
 use std::time::Duration;
 
 use clap::Parser;
+use color_eyre::eyre::Result;
 use tokio::{signal, time};
 
 use crate::alert::Alert;
 use crate::cli::Cli;
 use crate::conf::Conf;
 use crate::driver::DriverCommand;
-use crate::error::*;
 
 pub mod alert;
 mod cli;
 pub mod conf;
 mod driver;
-mod error;
 mod executor;
 mod logger;
 mod reader;
