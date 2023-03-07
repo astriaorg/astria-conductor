@@ -7,7 +7,7 @@ use tokio::{
 
 use astria_rpc::ExecutionRpcClient;
 
-use crate::conf::Conf;
+use crate::config::Config;
 use crate::driver;
 
 pub(crate) type JoinHandle = task::JoinHandle<Result<()>>;
@@ -19,7 +19,10 @@ type Receiver = UnboundedReceiver<ExecutorCommand>;
 
 /// spawns a executor task and returns a tuple with the task's join handle
 /// and the channel for sending commands to this executor
-pub(crate) async fn spawn(conf: &Conf, driver_tx: driver::Sender) -> Result<(JoinHandle, Sender)> {
+pub(crate) async fn spawn(
+    conf: &Config,
+    driver_tx: driver::Sender,
+) -> Result<(JoinHandle, Sender)> {
     log::info!("Spawning executor task.");
     let (mut executor, executor_tx) = Executor::new(conf, driver_tx).await?;
     let join_handle = task::spawn(async move { executor.run().await });
@@ -51,7 +54,7 @@ struct Executor {
 
 impl Executor {
     /// Creates a new Executor instance and returns a command sender and an alert receiver.
-    async fn new(conf: &Conf, driver_tx: driver::Sender) -> Result<(Self, Sender)> {
+    async fn new(conf: &Config, driver_tx: driver::Sender) -> Result<(Self, Sender)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
 
         // TODO - error handling

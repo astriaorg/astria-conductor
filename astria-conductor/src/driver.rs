@@ -9,12 +9,12 @@ use crate::executor::ExecutorCommand;
 use crate::reader::ReaderCommand;
 use crate::{
     alert::{AlertReceiver, AlertSender},
-    conf::Conf,
+    config::Config,
     executor, reader,
 };
 
 /// Spawns a new Driver and wraps it up nicely with a DriverHandle
-pub async fn spawn(conf: Conf) -> Result<(DriverHandle, AlertReceiver)> {
+pub(crate) async fn spawn(conf: Config) -> Result<(DriverHandle, AlertReceiver)> {
     let (alert_tx, alert_rx) = mpsc::unbounded_channel();
     let (mut driver, tx) = Driver::new(conf, alert_tx).await?;
 
@@ -31,7 +31,7 @@ pub async fn spawn(conf: Conf) -> Result<(DriverHandle, AlertReceiver)> {
 
 type JoinHandle = task::JoinHandle<Result<()>>;
 
-pub struct DriverHandle {
+pub(crate) struct DriverHandle {
     pub(crate) tx: Sender,
     join_handle: Option<JoinHandle>,
 }
@@ -39,7 +39,7 @@ pub struct DriverHandle {
 impl DriverHandle {
     /// Gracefully shuts down the driver and its components.
     /// Panics if the driver has already been shutdown.
-    pub async fn shutdown(&mut self) -> Result<()> {
+    pub(crate) async fn shutdown(&mut self) -> Result<()> {
         self.tx.send(DriverCommand::Shutdown)?;
         if let Err(e) = self
             .join_handle
@@ -86,11 +86,11 @@ pub(crate) struct Driver {
     alert_tx: AlertSender,
 
     /// The global configuration
-    conf: Conf,
+    conf: Config,
 }
 
 impl Driver {
-    async fn new(conf: Conf, alert_tx: AlertSender) -> Result<(Self, Sender)> {
+    async fn new(conf: Config, alert_tx: AlertSender) -> Result<(Self, Sender)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let (executor_join_handle, executor_tx) = executor::spawn(&conf, cmd_tx.clone()).await?;
         let (reader_join_handle, reader_tx) =
@@ -111,7 +111,7 @@ impl Driver {
     }
 
     /// Runs the Driver event loop.
-    pub async fn run(&mut self) -> Result<()> {
+    pub(crate) async fn run(&mut self) -> Result<()> {
         log::info!("Starting driver event loop.");
         while let Some(cmd) = self.cmd_rx.recv().await {
             match cmd {

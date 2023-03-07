@@ -2,16 +2,20 @@ use std::time::Duration;
 
 use clap::Parser;
 use color_eyre::eyre::Result;
+use figment::{
+    providers::{Env, Format, Serialized, Toml},
+    Figment,
+};
 use tokio::{signal, time};
 
 use crate::alert::Alert;
 use crate::cli::Cli;
-use crate::conf::Conf;
+use crate::config::Config;
 use crate::driver::DriverCommand;
 
 pub mod alert;
 mod cli;
-pub mod conf;
+mod config;
 mod driver;
 mod executor;
 mod logger;
@@ -22,11 +26,13 @@ async fn main() -> Result<()> {
     // logs
     logger::initialize();
 
-    // parse cli args
-    let args = Cli::parse();
+    // hierarchical config. cli args override Envars which override toml config values
+    let conf: Config = Figment::new()
+        .merge(Toml::file("ConductorConfig.toml"))
+        .merge(Env::prefixed("ASTRIA_"))
+        .merge(Serialized::defaults(Cli::parse()))
+        .extract()?;
 
-    // configuration
-    let conf = Conf::new(args.url, args.namespace_id, args.rpc_address);
     log::info!("Using node at {}", conf.celestia_node_url);
 
     // spawn our driver
