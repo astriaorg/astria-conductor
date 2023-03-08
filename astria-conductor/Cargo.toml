@@ -16,3 +16,5 @@ rs-cnc = { git = "https://github.com/astriaorg/rs-cnc", rev = "e0b45d6" }
 serde = "1.0.152"
 thiserror = "1.0.38"
 tokio = { version = "1.25.0", features = ["macros", "rt-multi-thread", "signal"] }
+tracing = "0.1.37"
+tracing-subscriber = "0.3.16"
