@@ -13,13 +13,13 @@ use crate::cli::Cli;
 use crate::config::Config;
 use crate::driver::{spawn, DriverCommand};
 
-pub mod alert;
-pub mod cli;
-pub mod config;
-pub mod driver;
-pub mod executor;
-pub mod logger;
-pub mod reader;
+pub(crate) mod alert;
+pub(crate) mod cli;
+pub(crate) mod config;
+pub(crate) mod driver;
+pub(crate) mod executor;
+pub(crate) mod logger;
+pub(crate) mod reader;
 
 pub async fn run() -> Result<()> {
     // logs
