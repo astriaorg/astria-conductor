@@ -1,6 +1,6 @@
 syntax = 'proto3';
 
-package execution;
+package execution.v1;
 
 message DoBlockRequest {
   bytes header = 1;

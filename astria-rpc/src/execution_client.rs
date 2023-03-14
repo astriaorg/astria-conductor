@@ -6,7 +6,7 @@ use execution::{
 };
 
 pub mod execution {
-    tonic::include_proto!("execution");
+    include!("execution.v1.rs");
 }
 
 /// Represents an RpcClient

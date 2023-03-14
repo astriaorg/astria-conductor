@@ -55,6 +55,7 @@ dependencies = [
  "serde",
  "thiserror",
  "tokio",
+ "tonic",
  "tracing",
  "tracing-subscriber",
 ]
