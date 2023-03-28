@@ -1,5 +1,4 @@
 use color_eyre::eyre::Result;
-use rs_cnc::NamespacedDataResponse;
 use sequencer_relayer::sequencer_block::SequencerBlock;
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
