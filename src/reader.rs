@@ -62,7 +62,7 @@ struct Reader {
     celestia_client: CelestiaClient,
 
     /// Namespace ID
-    namespace_id: Namespace,
+    namespace: Namespace,
 
     /// Keep track of the last block height fetched from Celestia
     last_block_height: u64,
@@ -72,7 +72,7 @@ impl Reader {
     /// Creates a new Reader instance and returns a command sender and an alert receiver.
     fn new(
         celestia_node_url: &str,
-        namespace_id: Namespace,
+        namespace: Namespace,
         driver_tx: driver::Sender,
         executor_tx: executor::Sender,
     ) -> Result<(Self, Sender)> {
@@ -85,7 +85,7 @@ impl Reader {
                 driver_tx,
                 executor_tx,
                 celestia_client,
-                namespace_id: namespace_id,
+                namespace,
                 last_block_height: 0,
             },
             cmd_tx,
@@ -156,14 +156,16 @@ impl Reader {
         let res = self.celestia_client.get_blocks(height, None).await?;
         // TODO: we need to verify the block using the expected proposer's key (by passing in their pubkey above)
         // and ensure there's only one block signed by them
-        Ok(res.into_iter().nth(0))
+        Ok(res.into_iter().next())
     }
 
     /// Processes an individual block
     async fn process_block(&mut self, block: SequencerBlock) -> Result<()> {
         self.last_block_height = block.header.height.parse::<u64>()?;
         self.executor_tx
-            .send(executor::ExecutorCommand::BlockReceived { block })?;
+            .send(executor::ExecutorCommand::BlockReceived {
+                block: Box::new(block),
+            })?;
 
         Ok(())
     }

@@ -36,7 +36,7 @@ pub(crate) enum ExecutorCommand {
     /// Command for when a block is received
     BlockReceived {
         // FIXME - this will probably not be a NamespacedDataResponse ultimately
-        block: SequencerBlock,
+        block: Box<SequencerBlock>,
     },
 
     Shutdown,
@@ -79,7 +79,7 @@ impl Executor {
             match cmd {
                 ExecutorCommand::BlockReceived { block } => {
                     log::info!("ExecutorCommand::BlockReceived {:#?}", block);
-                    self.execute_block(block).await?;
+                    self.execute_block(*block).await?;
                 }
                 ExecutorCommand::Shutdown => {
                     log::info!("Shutting down executor event loop.");
