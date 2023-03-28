@@ -1817,7 +1817,7 @@ dependencies = [
 [[package]]
 name = "sequencer-relayer"
 version = "0.1.0"
-source = "git+https://github.com/astriaorg/sequencer-relayer?rev=6c6cb95#6c6cb9553eefca4ab3009f12dd27d2747ee63130"
+source = "git+https://github.com/astriaorg/sequencer-relayer?rev=f719a7ff79562efe50e9ce9e542bbf415b9550c2#f719a7ff79562efe50e9ce9e542bbf415b9550c2"
 dependencies = [
  "base64 0.21.0",
  "bech32",

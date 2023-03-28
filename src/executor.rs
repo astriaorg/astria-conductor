@@ -1,5 +1,4 @@
 use color_eyre::eyre::Result;
-use rs_cnc::NamespacedDataResponse;
 use sequencer_relayer::sequencer_block::SequencerBlock;
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
@@ -31,13 +30,11 @@ pub(crate) async fn spawn(
     Ok((join_handle, executor_tx))
 }
 
-#[allow(dead_code)] // TODO - remove after developing
 #[derive(Debug)]
 pub(crate) enum ExecutorCommand {
     /// Command for when a block is received
     BlockReceived {
-        // FIXME - this will probably not be a NamespacedDataResponse ultimately
-        block: SequencerBlock,
+        block: Box<SequencerBlock>,
     },
 
     Shutdown,
@@ -80,7 +77,7 @@ impl Executor {
             match cmd {
                 ExecutorCommand::BlockReceived { block } => {
                     log::info!("ExecutorCommand::BlockReceived {:#?}", block);
-                    self.execute_block(block).await?;
+                    self.execute_block(*block).await?;
                 }
                 ExecutorCommand::Shutdown => {
                     log::info!("Shutting down executor event loop.");
