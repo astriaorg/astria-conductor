@@ -86,7 +86,7 @@ impl Reader {
                 executor_tx,
                 celestia_client,
                 namespace,
-                last_block_height: 0,
+                last_block_height: 1,
             },
             cmd_tx,
         ))
