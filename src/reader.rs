@@ -1,5 +1,8 @@
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
 use rs_cnc::{CelestiaNodeClient, NamespacedDataResponse};
+use sequencer_relayer::da::CelestiaClient;
+use sequencer_relayer::sequencer::SequencerClient;
+use sequencer_relayer::sequencer_block::SequencerBlock;
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
     task,
@@ -51,7 +54,10 @@ struct Reader {
     executor_tx: executor::Sender,
 
     /// The client used to communicate with Celestia.
-    celestia_node_client: CelestiaNodeClient,
+    // celestia_node_client: CelestiaNodeClient,
+
+    /// The client used to communicate with Celestia.
+    celestia_client: CelestiaClient,
 
     /// Namespace ID
     namespace_id: String,
@@ -68,14 +74,14 @@ impl Reader {
         executor_tx: executor::Sender,
     ) -> Result<(Self, Sender)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
-        let celestia_node_client = CelestiaNodeClient::new(conf.celestia_node_url.to_owned())?;
+        let celestia_client = CelestiaClient::new(conf.celestia_node_url.to_owned())?;
         Ok((
             Self {
                 cmd_tx: cmd_tx.clone(),
                 cmd_rx,
                 driver_tx,
                 executor_tx,
-                celestia_node_client,
+                celestia_client,
                 namespace_id: conf.namespace_id.to_owned(),
                 last_block_height: 0,
             },
@@ -105,23 +111,30 @@ impl Reader {
     async fn get_new_blocks(&mut self) -> Result<()> {
         log::info!("ReaderCommand::GetNewBlocks");
 
+        println!("get_new_blocks {:?}", self.last_block_height);
         // get most recent block
-        let res = self
-            .celestia_node_client
-            // NOTE - requesting w/ height of 0 gives us the last block. this isn't documented.
-            .namespaced_data(&self.namespace_id, 0)
-            .await;
+        // NOTE - requesting w/ height of 0 gives us the last block. this isn't documented.
+        let res = self.celestia_client.get_blocks(0, None).await;
 
         match res {
-            Ok(namespaced_data) => {
-                if let Some(height) = namespaced_data.height {
+            Ok(block) => {
+                println!("block: {:?}", block);
+                // return early if block is empty
+                // FIXME - these shouldn't be empty
+                if block.is_empty() {
+                    return Ok(());
+                }
+
+                let block = block.into_iter().nth(0).ok_or(eyre!("No block found"))?;
+                if let height = block.header.height.parse::<u64>().unwrap() {
+                    println!("height: {:?}", height);
                     // get blocks between current height and last height received and send to executor
                     for h in (self.last_block_height + 1)..(height) {
                         let block = self.get_block(h).await?;
                         self.process_block(block).await?;
                     }
                     // process the most recent block, which is actually the first one we requested above
-                    self.process_block(namespaced_data).await?;
+                    self.process_block(block).await?;
                 }
             }
             Err(e) => {
@@ -135,18 +148,18 @@ impl Reader {
     }
 
     /// Gets an individual block
-    async fn get_block(&mut self, height: u64) -> Result<NamespacedDataResponse> {
-        let res = self
-            .celestia_node_client
-            .namespaced_data(&self.namespace_id, height)
-            .await?;
+    async fn get_block(&mut self, height: u64) -> Result<SequencerBlock> {
+        println!("sequencer block get_block: {:?}", height);
+        let res = self.celestia_client.get_blocks(height, None).await?;
+        println!("sequencer block get_block: {:?}", res);
 
+        let res = res.into_iter().nth(0).ok_or(eyre!("No block found"))?;
         Ok(res)
     }
 
     /// Processes an individual block
-    async fn process_block(&mut self, block: NamespacedDataResponse) -> Result<()> {
-        self.last_block_height = block.height.unwrap();
+    async fn process_block(&mut self, block: SequencerBlock) -> Result<()> {
+        self.last_block_height = block.header.height.parse::<u64>()?;
         self.executor_tx
             .send(executor::ExecutorCommand::BlockReceived { block })?;
 

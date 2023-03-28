@@ -1,5 +1,6 @@
 use color_eyre::eyre::Result;
 use rs_cnc::NamespacedDataResponse;
+use sequencer_relayer::sequencer_block::SequencerBlock;
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
     task,
@@ -36,7 +37,7 @@ pub(crate) enum ExecutorCommand {
     /// Command for when a block is received
     BlockReceived {
         // FIXME - this will probably not be a NamespacedDataResponse ultimately
-        block: NamespacedDataResponse,
+        block: SequencerBlock,
     },
 
     Shutdown,
@@ -92,7 +93,7 @@ impl Executor {
     }
 
     /// Uses RPC to send block to execution service
-    async fn execute_block(&mut self, _block: NamespacedDataResponse) -> Result<()> {
+    async fn execute_block(&mut self, _block: SequencerBlock) -> Result<()> {
         // TODO - handle error properly
         let fake_header: Vec<u8> = vec![0, 1, 255];
         let fake_tx: Vec<Vec<u8>> = vec![vec![0, 1, 255], vec![1, 2, 3], vec![1, 0, 1, 1]];
