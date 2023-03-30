@@ -47,8 +47,6 @@ services:
       - bridge0
     # FIXME - use a tagged version eventually
     image: "ghcr.io/astriaorg/go-ethereum:latest"
-    expose:
-      - "50051:50051"
     ports:
       - "50051:50051"
     command: "--goerli --grpc --grpc.addr \"0.0.0.0\" --grpc.port 50051"
