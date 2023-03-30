@@ -9,7 +9,7 @@ Coordinates blocks between the data layer and the execution layer.
 ```
 celestia_node_url = "http://localhost:26659"
 chain_id = "test"
-rpc_address = "https://[::1]:50051"
+rpc_address = "https://0.0.0.0:50051"
 ```
 
 * run `cargo run`
@@ -44,3 +44,19 @@ Then, you can run the tests:
 ```bash
 cargo test
 ```
+
+
+### Run w/ Docker (wip):
+```bash
+# NOTE - there are currently issues with restarting containers, so ensure we start from a clean slate
+./tests/docker/clean-docker.sh
+
+# run the containers
+docker-compose -f tests/docker/docker-compose.yml up
+
+# run the tests
+cargo test
+```
+
+Known issues:
+* can't stop and restart bridge or metro container successfully
