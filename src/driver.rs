@@ -1,59 +1,18 @@
 //! The driver is the top-level coordinator that runs and manages all the components
 //! necessary for this reader/validator.
 
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
+use futures::future::{poll_fn, FutureExt};
 use log::{error, info};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
-use tokio::task;
+
+// use std::future::{Future};
+use std::pin::Pin;
+// use std::task::{Context, Poll, Waker};
 
 use crate::executor::ExecutorCommand;
 use crate::reader::ReaderCommand;
-use crate::{
-    alert::{AlertReceiver, AlertSender},
-    config::Config,
-    executor, reader,
-};
-
-/// Spawns a new Driver and wraps it up nicely with a DriverHandle
-pub(crate) async fn spawn(conf: Config) -> Result<(DriverHandle, AlertReceiver)> {
-    let (alert_tx, alert_rx) = mpsc::unbounded_channel();
-    let (mut driver, tx) = Driver::new(conf, alert_tx).await?;
-
-    let join_handle = task::spawn(async move { driver.run().await });
-
-    Ok((
-        DriverHandle {
-            tx,
-            join_handle: Some(join_handle),
-        },
-        alert_rx,
-    ))
-}
-
-type JoinHandle = task::JoinHandle<Result<()>>;
-
-pub(crate) struct DriverHandle {
-    pub(crate) tx: Sender,
-    join_handle: Option<JoinHandle>,
-}
-
-impl DriverHandle {
-    /// Gracefully shuts down the driver and its components.
-    /// Panics if the driver has already been shutdown.
-    pub(crate) async fn shutdown(&mut self) -> Result<()> {
-        self.tx.send(DriverCommand::Shutdown)?;
-        if let Err(e) = self
-            .join_handle
-            .take()
-            .expect("Driver already shut down.")
-            .await
-            .expect("Task error.")
-        {
-            error!("Driver error: {}", e);
-        }
-        Ok(())
-    }
-}
+use crate::{alert::AlertSender, config::Config, executor, reader};
 
 /// The channel through which the user can send commands to the driver.
 pub(crate) type Sender = UnboundedSender<DriverCommand>;
@@ -71,16 +30,18 @@ pub(crate) enum DriverCommand {
 
 #[allow(dead_code)] // TODO - remove after developing
 pub(crate) struct Driver {
+    pub(crate) cmd_tx: Sender,
+
     /// The channel on which other components in the driver sends the driver messages.
     cmd_rx: Receiver,
 
     /// The channel used to send messages to the reader task.
     reader_tx: reader::Sender,
-    reader_join_handle: Option<reader::JoinHandle>,
+    reader_join_handle: reader::JoinHandle,
 
     /// The channel used to send messages to the executor task.
     executor_tx: executor::Sender,
-    executor_join_handle: Option<executor::JoinHandle>,
+    executor_join_handle: executor::JoinHandle,
 
     /// The channel on which the driver and tasks in the driver can post alerts
     /// to the consumer of the driver.
@@ -91,48 +52,110 @@ pub(crate) struct Driver {
 }
 
 impl Driver {
-    async fn new(conf: Config, alert_tx: AlertSender) -> Result<(Self, Sender)> {
+    pub(crate) async fn new(conf: Config, alert_tx: AlertSender) -> Result<Self> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let (executor_join_handle, executor_tx) = executor::spawn(&conf).await?;
         let (reader_join_handle, reader_tx) =
-            reader::spawn(&conf, cmd_tx.clone(), executor_tx.clone())?;
+            reader::spawn(&conf, cmd_tx.clone(), executor_tx.clone()).await?;
 
-        Ok((
-            Self {
-                cmd_rx,
-                reader_tx,
-                reader_join_handle: Some(reader_join_handle),
-                executor_tx,
-                executor_join_handle: Some(executor_join_handle),
-                alert_tx,
-                conf,
-            },
-            cmd_tx,
-        ))
+        Ok(Self {
+            cmd_tx: cmd_tx.clone(),
+            cmd_rx,
+            reader_tx,
+            reader_join_handle,
+            executor_tx,
+            executor_join_handle,
+            alert_tx,
+            conf,
+        })
     }
 
     /// Runs the Driver event loop.
     pub(crate) async fn run(&mut self) -> Result<()> {
         info!("Starting driver event loop.");
         while let Some(cmd) = self.cmd_rx.recv().await {
+            // TODO: these are kind of janky, we might want to move to a polling-based architecture
+            if let Some(Ok(res)) = poll_fn(|cx| {
+                Pin::new(&mut self.reader_join_handle)
+                    .as_mut()
+                    .poll_unpin(cx)
+            })
+            .now_or_never()
+            {
+                error!("Reader task exited unexpectedly.");
+                return res;
+            }
+
+            if let Some(Ok(res)) = poll_fn(|cx| {
+                Pin::new(&mut self.executor_join_handle)
+                    .as_mut()
+                    .poll_unpin(cx)
+            })
+            .now_or_never()
+            {
+                error!("Executor task exited unexpectedly.");
+                return res;
+            }
+
             match cmd {
                 DriverCommand::Shutdown => {
-                    self.shutdown().await?;
+                    self.shutdown()?;
                     break;
                 }
                 DriverCommand::GetNewBlocks => {
-                    self.reader_tx.send(ReaderCommand::GetNewBlocks)?;
+                    self.reader_tx
+                        .send(ReaderCommand::GetNewBlocks)
+                        .map_err(|e| eyre!("reader rx channel closed: {}", e))?;
                 }
             }
         }
+        error!("Driver event loop exited unexpectedly.");
         Ok(())
     }
 
     /// Sends shutdown commands to the other actors.
-    async fn shutdown(&mut self) -> Result<()> {
+    fn shutdown(&mut self) -> Result<()> {
+        // TODO: mutex to prevent double shutdown
         info!("Shutting down driver.");
         self.reader_tx.send(ReaderCommand::Shutdown)?;
         self.executor_tx.send(ExecutorCommand::Shutdown)?;
         Ok(())
     }
 }
+
+// impl Future for Driver {
+//     type Output = Result<()>;
+
+//     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+//         if let Poll::Ready(Ok(res)) = self.reader_join_handle.poll_unpin(cx) {
+//             error!("Reader task exited unexpectedly.");
+//             return Poll::Ready(Ok(()));
+//         }
+
+//         if let Poll::Ready(Ok(res)) = self.executor_join_handle.poll_unpin(cx) {
+//             error!("Executor task exited unexpectedly.");
+//             return Poll::Ready(Ok(()));
+//         }
+
+//         match self.cmd_rx.poll_recv(cx) {
+//             Poll::Ready(Some(cmd)) => match cmd {
+//                 DriverCommand::Shutdown => {
+//                     self.shutdown_actors()?;
+//                     return Poll::Ready(Ok(()));
+//                 }
+//                 DriverCommand::GetNewBlocks => {
+//                     self.reader_tx
+//                         .send(ReaderCommand::GetNewBlocks)
+//                         .map_err(|e| eyre!("reader rx channel closed: {}", e))?;
+//                 }
+//             },
+//             Poll::Ready(None) => {
+//                 return Poll::Ready(Err(eyre!("Driver event loop exited unexpectedly.")));
+//             }
+//             Poll::Pending => {}
+//         }
+
+//         self.waker = Some(cx.waker().clone());
+//         Poll::Pending
+//     }
+// }

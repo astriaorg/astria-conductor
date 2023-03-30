@@ -1,4 +1,4 @@
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
 use log::{error, info};
 use sequencer_relayer::{da::CelestiaClient, sequencer_block::SequencerBlock};
 use tokio::{
@@ -18,13 +18,14 @@ type Receiver = UnboundedReceiver<ReaderCommand>;
 
 /// spawns a reader task and returns a tuple with the task's join handle
 /// and the channel for sending commands to this reader
-pub(crate) fn spawn(
+pub(crate) async fn spawn(
     conf: &Config,
     driver_tx: driver::Sender,
     executor_tx: executor::Sender,
 ) -> Result<(JoinHandle, Sender)> {
     info!("Spawning reader task.");
-    let (mut reader, reader_tx) = Reader::new(&conf.celestia_node_url, driver_tx, executor_tx)?;
+    let (mut reader, reader_tx) =
+        Reader::new(&conf.celestia_node_url, driver_tx, executor_tx).await?;
     let join_handle = task::spawn(async move { reader.run().await });
     info!("Spawned reader task.");
     Ok((join_handle, reader_tx))
@@ -54,19 +55,20 @@ struct Reader {
     /// The client used to communicate with Celestia.
     celestia_client: CelestiaClient,
 
-    /// Keep track of the last block height fetched from Celestia
-    last_block_height: u64,
+    /// the last block height fetched from Celestia
+    curr_block_height: u64,
 }
 
 impl Reader {
     /// Creates a new Reader instance and returns a command sender and an alert receiver.
-    fn new(
+    async fn new(
         celestia_node_url: &str,
         driver_tx: driver::Sender,
         executor_tx: executor::Sender,
     ) -> Result<(Self, Sender)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let celestia_client = CelestiaClient::new(celestia_node_url.to_owned())?;
+        let curr_block_height = celestia_client.get_latest_height().await?;
         Ok((
             Self {
                 cmd_tx: cmd_tx.clone(),
@@ -74,7 +76,7 @@ impl Reader {
                 driver_tx,
                 executor_tx,
                 celestia_client,
-                last_block_height: 1,
+                curr_block_height,
             },
             cmd_tx,
         ))
@@ -86,9 +88,14 @@ impl Reader {
         while let Some(cmd) = self.cmd_rx.recv().await {
             match cmd {
                 ReaderCommand::GetNewBlocks => {
-                    let blocks = self.get_new_blocks().await?;
+                    let blocks = self
+                        .get_new_blocks()
+                        .await
+                        .map_err(|e| eyre!("failed to get new block: {}", e))?;
                     for block in blocks {
-                        self.process_block(block).await?;
+                        self.process_block(block)
+                            .await
+                            .map_err(|e| eyre!("failed to process block: {}", e))?;
                     }
                 }
                 ReaderCommand::Shutdown => {
@@ -107,10 +114,15 @@ impl Reader {
         let mut blocks = vec![];
 
         // get the latest celestia block height
-        let latest_height = self.celestia_client.get_latest_height().await?;
+        let prev_height = self.curr_block_height;
+        self.curr_block_height = self.celestia_client.get_latest_height().await?;
+        info!(
+            "checking celestia blocks {} to {}",
+            prev_height, self.curr_block_height
+        );
 
         // check for any new sequencer blocks written from the previous to current block height
-        for height in self.last_block_height..latest_height {
+        for height in prev_height..self.curr_block_height {
             let res = self.get_block(height).await;
 
             match res {
@@ -133,12 +145,11 @@ impl Reader {
             }
         }
 
-        self.last_block_height = latest_height;
         Ok(blocks)
     }
 
     /// Gets an individual block for a given Celestia height
-    async fn get_block(&mut self, height: u64) -> Result<Option<SequencerBlock>> {
+    async fn get_block(&self, height: u64) -> Result<Option<SequencerBlock>> {
         let res = self.celestia_client.get_blocks(height, None).await?;
         // TODO: we need to verify the block using the expected proposer's key (by passing in their pubkey above)
         // and ensure there's only one block signed by them
@@ -146,8 +157,7 @@ impl Reader {
     }
 
     /// Processes an individual block
-    async fn process_block(&mut self, block: SequencerBlock) -> Result<()> {
-        self.last_block_height = block.header.height.parse::<u64>()?;
+    async fn process_block(&self, block: SequencerBlock) -> Result<()> {
         self.executor_tx
             .send(executor::ExecutorCommand::BlockReceived {
                 block: Box::new(block),
@@ -169,7 +179,9 @@ mod test {
         let (executor_tx, _) = mpsc::unbounded_channel();
 
         let (mut reader, _reader_tx) =
-            Reader::new(DEFAULT_CELESTIA_ENDPOINT, driver_tx, executor_tx).unwrap();
+            Reader::new(DEFAULT_CELESTIA_ENDPOINT, driver_tx, executor_tx)
+                .await
+                .unwrap();
 
         let blocks = reader.get_new_blocks().await.unwrap();
         assert!(blocks.len() > 0);

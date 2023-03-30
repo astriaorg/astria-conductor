@@ -1,4 +1,5 @@
 use color_eyre::eyre::{eyre, Result};
+use log::{info, warn};
 use sequencer_relayer::proto::SequencerMsg;
 use sequencer_relayer::sequencer_block::{
     cosmos_tx_body_to_sequencer_msgs, get_namespace, parse_cosmos_tx, Namespace, SequencerBlock,
@@ -74,7 +75,10 @@ impl Executor {
         while let Some(cmd) = self.cmd_rx.recv().await {
             match cmd {
                 ExecutorCommand::BlockReceived { block } => {
-                    log::info!("ExecutorCommand::BlockReceived {:#?}", block);
+                    log::info!(
+                        "ExecutorCommand::BlockReceived height={}",
+                        block.header.height
+                    );
                     self.execute_block(*block).await?;
                 }
                 ExecutorCommand::Shutdown => {
@@ -95,7 +99,8 @@ impl Executor {
 
         // get transactions for our namespace
         let Some(txs) = block.rollup_txs.get(&self.namespace) else {
-            return Err(eyre!("sequencer block did not contains txs for namespace"));
+            info!("sequencer block {} did not contains txs for namespace", block.header.height);
+            return Ok(());
         };
 
         // parse cosmos sequencer transactions into rollup transactions
@@ -107,6 +112,10 @@ impl Executor {
                 let msgs: Vec<SequencerMsg> = cosmos_tx_body_to_sequencer_msgs(body).ok()?;
                 if msgs.len() > 1 {
                     // this should not happen and is a bug in the sequencer relayer
+                    warn!(
+                        "ignoring cosmos tx with more than one sequencer message: {:#?}",
+                        msgs
+                    );
                     return None;
                 }
                 let Some(msg) = msgs.first() else {

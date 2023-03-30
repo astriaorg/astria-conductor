@@ -7,12 +7,13 @@ use figment::{
     Figment,
 };
 use log::{error, info};
+use tokio::sync::mpsc;
 use tokio::{signal, time};
 
 use crate::alert::Alert;
 use crate::cli::Cli;
 use crate::config::Config;
-use crate::driver::{spawn, DriverCommand};
+use crate::driver::{Driver, DriverCommand};
 
 pub(crate) mod alert;
 pub(crate) mod cli;
@@ -39,7 +40,15 @@ pub async fn run() -> Result<()> {
     log::info!("Using execution node at {}", conf.execution_rpc_url);
 
     // spawn our driver
-    let (mut driver_handle, mut alert_rx) = spawn(conf).await?;
+    let (alert_tx, mut alert_rx) = mpsc::unbounded_channel();
+    let mut driver = Driver::new(conf, alert_tx).await?;
+    let driver_tx = driver.cmd_tx.clone();
+
+    tokio::task::spawn(async move {
+        if let Err(e) = driver.run().await {
+            panic!("Driver error: {}", e)
+        }
+    });
 
     // NOTE - this will most likely be replaced by an RPC server that will receive gossip
     //  messages from the sequencer
@@ -62,13 +71,14 @@ pub async fn run() -> Result<()> {
             }
             // request new blocks every X seconds
             _ = interval.tick() => {
-                driver_handle.tx.send(DriverCommand::GetNewBlocks)?;
+                driver_tx.send(DriverCommand::GetNewBlocks)?;
             }
             // shutdown properly on ctrl-c
             _ = signal::ctrl_c() => {
-                driver_handle.shutdown().await?;
+                driver_tx.send(DriverCommand::Shutdown)?;
             }
         }
+
         if !run {
             break;
         }

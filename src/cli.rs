@@ -19,7 +19,7 @@ pub(crate) struct Cli {
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub(crate) execution_rpc_url: Option<String>,
 
-    /// Log level.
+    /// Log level. One of debug, info, warn, or error
     #[arg(long = "log", default_value = "info")]
     pub(crate) log_level: String,
 }
