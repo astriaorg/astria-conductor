@@ -46,7 +46,6 @@ pub(crate) enum ExecutorCommand {
     Shutdown,
 }
 
-//#[allow(dead_code)] // TODO - remove after developing
 struct Executor {
     /// Channel on which executor commands are received.
     cmd_rx: Receiver,

@@ -7,7 +7,7 @@ use tokio::{
 };
 
 use crate::config::Config;
-use crate::{driver, executor};
+use crate::executor;
 
 pub(crate) type JoinHandle = task::JoinHandle<Result<()>>;
 
@@ -20,19 +20,16 @@ type Receiver = UnboundedReceiver<ReaderCommand>;
 /// and the channel for sending commands to this reader
 pub(crate) async fn spawn(
     conf: &Config,
-    driver_tx: driver::Sender,
     executor_tx: executor::Sender,
 ) -> Result<(JoinHandle, Sender)> {
     info!("Spawning reader task.");
-    let (mut reader, reader_tx) =
-        Reader::new(&conf.celestia_node_url, driver_tx, executor_tx).await?;
+    let (mut reader, reader_tx) = Reader::new(&conf.celestia_node_url, executor_tx).await?;
     let join_handle = task::spawn(async move { reader.run().await });
     info!("Spawned reader task.");
     Ok((join_handle, reader_tx))
 }
 
 #[derive(Debug)]
-#[allow(dead_code)] // TODO - remove after developing
 pub(crate) enum ReaderCommand {
     /// Get new blocks
     GetNewBlocks,
@@ -40,14 +37,9 @@ pub(crate) enum ReaderCommand {
     Shutdown,
 }
 
-#[allow(dead_code)] // TODO - remove after developing
 struct Reader {
-    /// Channel on which reader commands are sent.
-    cmd_tx: Sender,
     /// Channel on which reader commands are received.
     cmd_rx: Receiver,
-    /// Channel on which the reader sends commands to the driver.
-    driver_tx: driver::Sender,
 
     /// The channel used to send messages to the executor task.
     executor_tx: executor::Sender,
@@ -61,11 +53,7 @@ struct Reader {
 
 impl Reader {
     /// Creates a new Reader instance and returns a command sender and an alert receiver.
-    async fn new(
-        celestia_node_url: &str,
-        driver_tx: driver::Sender,
-        executor_tx: executor::Sender,
-    ) -> Result<(Self, Sender)> {
+    async fn new(celestia_node_url: &str, executor_tx: executor::Sender) -> Result<(Self, Sender)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let celestia_client = CelestiaClient::new(celestia_node_url.to_owned())?;
 
@@ -73,9 +61,7 @@ impl Reader {
         let curr_block_height = celestia_client.get_latest_height().await?;
         Ok((
             Self {
-                cmd_tx: cmd_tx.clone(),
                 cmd_rx,
-                driver_tx,
                 executor_tx,
                 celestia_client,
                 curr_block_height,
@@ -177,13 +163,11 @@ mod test {
 
     #[tokio::test]
     async fn test_reader_get_new_blocks() {
-        let (driver_tx, _) = mpsc::unbounded_channel();
         let (executor_tx, _) = mpsc::unbounded_channel();
 
-        let (mut reader, _reader_tx) =
-            Reader::new(DEFAULT_CELESTIA_ENDPOINT, driver_tx, executor_tx)
-                .await
-                .unwrap();
+        let (mut reader, _reader_tx) = Reader::new(DEFAULT_CELESTIA_ENDPOINT, executor_tx)
+            .await
+            .unwrap();
 
         let blocks = reader.get_new_blocks().await.unwrap();
         assert!(blocks.len() > 0);

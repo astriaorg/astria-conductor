@@ -48,8 +48,7 @@ impl Driver {
     pub(crate) async fn new(conf: Config, alert_tx: AlertSender) -> Result<Self> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let (executor_join_handle, executor_tx) = executor::spawn(&conf, alert_tx.clone()).await?;
-        let (reader_join_handle, reader_tx) =
-            reader::spawn(&conf, cmd_tx.clone(), executor_tx.clone()).await?;
+        let (reader_join_handle, reader_tx) = reader::spawn(&conf, executor_tx.clone()).await?;
 
         Ok(Self {
             cmd_tx: cmd_tx.clone(),
