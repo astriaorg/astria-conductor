@@ -1,4 +1,5 @@
 use color_eyre::eyre::Result;
+use log::{error, info};
 use sequencer_relayer::{da::CelestiaClient, sequencer_block::SequencerBlock};
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
@@ -22,10 +23,10 @@ pub(crate) fn spawn(
     driver_tx: driver::Sender,
     executor_tx: executor::Sender,
 ) -> Result<(JoinHandle, Sender)> {
-    log::info!("Spawning reader task.");
+    info!("Spawning reader task.");
     let (mut reader, reader_tx) = Reader::new(&conf.celestia_node_url, driver_tx, executor_tx)?;
     let join_handle = task::spawn(async move { reader.run().await });
-    log::info!("Spawned reader task.");
+    info!("Spawned reader task.");
     Ok((join_handle, reader_tx))
 }
 
@@ -80,7 +81,7 @@ impl Reader {
     }
 
     async fn run(&mut self) -> Result<()> {
-        log::info!("Starting reader event loop.");
+        info!("Starting reader event loop.");
 
         while let Some(cmd) = self.cmd_rx.recv().await {
             match cmd {
@@ -91,7 +92,7 @@ impl Reader {
                     }
                 }
                 ReaderCommand::Shutdown => {
-                    log::info!("Shutting down reader event loop.");
+                    info!("Shutting down reader event loop.");
                     break;
                 }
             }
@@ -102,7 +103,7 @@ impl Reader {
 
     /// get_new_blocks fetches any new sequencer blocks from Celestia.
     async fn get_new_blocks(&mut self) -> Result<Vec<SequencerBlock>> {
-        log::info!("ReaderCommand::GetNewBlocks");
+        info!("ReaderCommand::GetNewBlocks");
         let mut blocks = vec![];
 
         // get the latest celestia block height
@@ -114,8 +115,6 @@ impl Reader {
 
             match res {
                 Ok(block) => {
-                    println!("block: {:?}", block);
-
                     // continue as celestia block doesn't have a sequencer block
                     let Some(block) = block else {
                         continue;
@@ -123,13 +122,13 @@ impl Reader {
 
                     // sequencer block's height
                     let height = block.header.height.parse::<u64>()?;
-                    println!("sequencer block height: {:?}", height);
+                    info!("got sequencer block with height: {:?}", height);
                     blocks.push(block);
                 }
                 Err(e) => {
                     // just log the error for now.
                     // any blocks that weren't fetched will be handled in the next cycle
-                    log::error!("{}", e.to_string());
+                    error!("{}", e.to_string());
                 }
             }
         }
@@ -173,7 +172,6 @@ mod test {
             Reader::new(DEFAULT_CELESTIA_ENDPOINT, driver_tx, executor_tx).unwrap();
 
         let blocks = reader.get_new_blocks().await.unwrap();
-        println!("blocks: {:?}", blocks);
         assert!(blocks.len() > 0);
     }
 }

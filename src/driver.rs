@@ -2,6 +2,7 @@
 //! necessary for this reader/validator.
 
 use color_eyre::eyre::Result;
+use log::{error, info};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tokio::task;
 
@@ -48,7 +49,7 @@ impl DriverHandle {
             .await
             .expect("Task error.")
         {
-            log::error!("Driver error: {}", e);
+            error!("Driver error: {}", e);
         }
         Ok(())
     }
@@ -112,7 +113,7 @@ impl Driver {
 
     /// Runs the Driver event loop.
     pub(crate) async fn run(&mut self) -> Result<()> {
-        log::info!("Starting driver event loop.");
+        info!("Starting driver event loop.");
         while let Some(cmd) = self.cmd_rx.recv().await {
             match cmd {
                 DriverCommand::Shutdown => {
@@ -129,7 +130,7 @@ impl Driver {
 
     /// Sends shutdown commands to the other actors.
     async fn shutdown(&mut self) -> Result<()> {
-        log::info!("Shutting down driver.");
+        info!("Shutting down driver.");
         self.reader_tx.send(ReaderCommand::Shutdown)?;
         self.executor_tx.send(ExecutorCommand::Shutdown)?;
         Ok(())

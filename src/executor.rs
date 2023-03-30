@@ -1,7 +1,7 @@
 use color_eyre::eyre::{eyre, Result};
 use sequencer_relayer::proto::SequencerMsg;
 use sequencer_relayer::sequencer_block::{
-    cosmos_tx_body_to_sequencer_msgs, parse_cosmos_tx, Namespace, SequencerBlock,
+    cosmos_tx_body_to_sequencer_msgs, get_namespace, parse_cosmos_tx, Namespace, SequencerBlock,
 };
 use serde::{Deserialize, Serialize};
 use tokio::{
@@ -23,8 +23,11 @@ type Receiver = UnboundedReceiver<ExecutorCommand>;
 /// and the channel for sending commands to this executor
 pub(crate) async fn spawn(conf: &Config) -> Result<(JoinHandle, Sender)> {
     log::info!("Spawning executor task.");
-    let (mut executor, executor_tx) =
-        Executor::new(&conf.rpc_address, Namespace::from_string(&conf.chain_id)?).await?;
+    let (mut executor, executor_tx) = Executor::new(
+        &conf.execution_rpc_url,
+        get_namespace(conf.chain_id.as_bytes()),
+    )
+    .await?;
     let join_handle = task::spawn(async move { executor.run().await });
     log::info!("Spawned executor task.");
     Ok((join_handle, executor_tx))

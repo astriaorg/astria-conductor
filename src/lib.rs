@@ -6,6 +6,7 @@ use figment::{
     providers::{Env, Format, Serialized, Toml},
     Figment,
 };
+use log::{error, info};
 use tokio::{signal, time};
 
 use crate::alert::Alert;
@@ -23,17 +24,19 @@ pub(crate) mod logger;
 pub(crate) mod reader;
 
 pub async fn run() -> Result<()> {
+    let args = Cli::parse();
     // logs
-    logger::initialize();
+    logger::initialize(&args.log_level);
 
     // hierarchical config. cli args override Envars which override toml config values
     let conf: Config = Figment::new()
         .merge(Toml::file("ConductorConfig.toml"))
         .merge(Env::prefixed("ASTRIA_"))
-        .merge(Serialized::defaults(Cli::parse()))
+        .merge(Serialized::defaults(args))
         .extract()?;
 
-    log::info!("Using node at {}", conf.celestia_node_url);
+    log::info!("Using Celestia node at {}", conf.celestia_node_url);
+    log::info!("Using execution node at {}", conf.execution_rpc_url);
 
     // spawn our driver
     let (mut driver_handle, mut alert_rx) = spawn(conf).await?;
@@ -49,11 +52,11 @@ pub async fn run() -> Result<()> {
             Some(alert) = alert_rx.recv() => {
                 match alert {
                     Alert::DriverError(error_string) => {
-                        println!("error: {}", error_string);
+                        error!("error: {}", error_string);
                         run = false;
                     }
                     Alert::BlockReceived{block_height} => {
-                        println!("block received at {}", block_height);
+                        info!("block received from DA layer; DA layer height: {}", block_height);
                     }
                 }
             }
