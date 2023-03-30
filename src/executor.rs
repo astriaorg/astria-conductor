@@ -132,8 +132,8 @@ impl Executor {
                     return None;
                 }
                 let Some(msg) = msgs.first() else {
-                return None;
-            };
+                    return None;
+                };
                 Some(msg.data.clone())
             })
             .collect::<Vec<_>>();
