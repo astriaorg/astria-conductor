@@ -1,10 +1,9 @@
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::Result;
 use log::{info, warn};
 use sequencer_relayer::proto::SequencerMsg;
 use sequencer_relayer::sequencer_block::{
     cosmos_tx_body_to_sequencer_msgs, get_namespace, parse_cosmos_tx, Namespace, SequencerBlock,
 };
-use serde::{Deserialize, Serialize};
 use prost_types::Timestamp;
 use tendermint::Time;
 use tokio::{
@@ -39,11 +38,11 @@ pub(crate) async fn spawn(conf: &Config, alert_tx: AlertSender) -> Result<(JoinH
 }
 
 // Given a string, convert to protobuf timestamp
-fn time_conversion(value: String) -> Option<Timestamp> {
-    let time = Time::parse_from_rfc3339(&*value).expect("Could not get timestamp");
+fn time_conversion(value: &str) -> Option<Timestamp> {
+    let time = Time::parse_from_rfc3339(value).expect("Could not get timestamp");
     let seconds = time.unix_timestamp();
     let all_nanos = time.unix_timestamp_nanos();
-    let nanos = (all_nanos - (seconds as i128 * 10^9)) as i32;
+    let nanos = (all_nanos - (seconds as i128 * 10_i128.pow(9))) as i32; // Largest this can be is order of 10^9, ok to cast
     Some(Timestamp { seconds, nanos })
 }
 
@@ -152,7 +151,7 @@ impl Executor {
             })
             .collect::<Vec<_>>();
 
-        let timestamp = time_conversion(block.header.time);
+        let timestamp = time_conversion(&*block.header.time);
 
         let response = self.execution_rpc_client
             .call_do_block(prev_state_root, txs, timestamp)
