@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-use std::time::SystemTime;
-
 use color_eyre::eyre::{eyre, Result};
 use log::{info, warn};
 use sequencer_relayer::proto::SequencerMsg;
@@ -8,11 +5,8 @@ use sequencer_relayer::sequencer_block::{
     cosmos_tx_body_to_sequencer_msgs, get_namespace, parse_cosmos_tx, Namespace, SequencerBlock,
 };
 use serde::{Deserialize, Serialize};
-=======
-use color_eyre::eyre::Result;
 use prost_types::Timestamp;
-use sequencer_relayer::sequencer_block::SequencerBlock;
->>>>>>> ad1e0b2 (Added InitState, state tracking, and updated timestamp fields)
+use tendermint::Time;
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
     task,
@@ -43,6 +37,16 @@ pub(crate) async fn spawn(conf: &Config, alert_tx: AlertSender) -> Result<(JoinH
     log::info!("Spawned executor task.");
     Ok((join_handle, executor_tx))
 }
+
+// Given a string, convert to protobuf timestamp
+fn time_conversion(value: String) -> Option<Timestamp> {
+    let time = Time::parse_from_rfc3339(&*value).expect("Could not get timestamp");
+    let seconds = time.unix_timestamp();
+    let all_nanos = time.unix_timestamp_nanos();
+    let nanos = (all_nanos - (seconds as i128 * 10^9)) as i32;
+    Some(Timestamp { seconds, nanos })
+}
+
 
 #[derive(Debug)]
 pub(crate) enum ExecutorCommand {
@@ -76,7 +80,7 @@ impl Executor {
         alert_tx: AlertSender,
     ) -> Result<(Self, Sender)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
-        let execution_rpc_client = ExecutionRpcClient::new(rpc_address).await?;
+        let mut execution_rpc_client = ExecutionRpcClient::new(rpc_address).await?;
         let init_state_response = execution_rpc_client.call_init_state().await?;
         let execution_state = init_state_response.state_root;
         Ok((
@@ -148,27 +152,16 @@ impl Executor {
             })
             .collect::<Vec<_>>();
 
-        let timestamp = Timestamp::from(block.header.time);
+        let timestamp = time_conversion(block.header.time);
 
-        self.execution_rpc_client
-            .call_do_block(prev_state_root, txs, Some(timestamp))
+        let response = self.execution_rpc_client
+            .call_do_block(prev_state_root, txs, timestamp)
             .await?;
         self.execution_state = response.state_root;
 
         Ok(())
     }
 
-}
+    
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Header {
-    block_hash: Vec<u8>,
-}
-
-impl Header {
-    fn to_bytes(&self) -> Result<Vec<u8>> {
-        // TODO: don't use json, use our own serializer (or protobuf for now?)
-        let string = serde_json::to_string(self).map_err(|e| eyre!(e))?;
-        Ok(string.into_bytes())
-    }
 }
