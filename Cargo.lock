@@ -63,6 +63,7 @@ dependencies = [
  "rs-cnc 0.1.0 (git+https://github.com/astriaorg/rs-cnc?rev=e0b45d6)",
  "sequencer-relayer",
  "serde",
+ "serde_json",
  "thiserror",
  "tokio",
  "tonic",

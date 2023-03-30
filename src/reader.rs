@@ -1,8 +1,5 @@
 use color_eyre::eyre::Result;
-use sequencer_relayer::{
-    da::CelestiaClient,
-    sequencer_block::{Namespace, SequencerBlock},
-};
+use sequencer_relayer::{da::CelestiaClient, sequencer_block::SequencerBlock};
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
     task,
@@ -26,12 +23,7 @@ pub(crate) fn spawn(
     executor_tx: executor::Sender,
 ) -> Result<(JoinHandle, Sender)> {
     log::info!("Spawning reader task.");
-    let (mut reader, reader_tx) = Reader::new(
-        &conf.celestia_node_url,
-        Namespace::from_string(&conf.chain_id)?,
-        driver_tx,
-        executor_tx,
-    )?;
+    let (mut reader, reader_tx) = Reader::new(&conf.celestia_node_url, driver_tx, executor_tx)?;
     let join_handle = task::spawn(async move { reader.run().await });
     log::info!("Spawned reader task.");
     Ok((join_handle, reader_tx))
@@ -61,9 +53,6 @@ struct Reader {
     /// The client used to communicate with Celestia.
     celestia_client: CelestiaClient,
 
-    /// Namespace ID
-    namespace: Namespace,
-
     /// Keep track of the last block height fetched from Celestia
     last_block_height: u64,
 }
@@ -72,7 +61,6 @@ impl Reader {
     /// Creates a new Reader instance and returns a command sender and an alert receiver.
     fn new(
         celestia_node_url: &str,
-        namespace: Namespace,
         driver_tx: driver::Sender,
         executor_tx: executor::Sender,
     ) -> Result<(Self, Sender)> {
@@ -85,7 +73,6 @@ impl Reader {
                 driver_tx,
                 executor_tx,
                 celestia_client,
-                namespace,
                 last_block_height: 1,
             },
             cmd_tx,
@@ -174,7 +161,6 @@ impl Reader {
 #[cfg(test)]
 mod test {
     use super::*;
-    use sequencer_relayer::sequencer_block::DEFAULT_NAMESPACE;
 
     const DEFAULT_CELESTIA_ENDPOINT: &str = "http://localhost:26659";
 
@@ -183,13 +169,8 @@ mod test {
         let (driver_tx, _) = mpsc::unbounded_channel();
         let (executor_tx, _) = mpsc::unbounded_channel();
 
-        let (mut reader, _reader_tx) = Reader::new(
-            DEFAULT_CELESTIA_ENDPOINT,
-            DEFAULT_NAMESPACE.clone(),
-            driver_tx,
-            executor_tx,
-        )
-        .unwrap();
+        let (mut reader, _reader_tx) =
+            Reader::new(DEFAULT_CELESTIA_ENDPOINT, driver_tx, executor_tx).unwrap();
 
         let blocks = reader.get_new_blocks().await.unwrap();
         println!("blocks: {:?}", blocks);

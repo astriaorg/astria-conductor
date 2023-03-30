@@ -1,14 +1,16 @@
-use color_eyre::eyre::Result;
-use sequencer_relayer::sequencer_block::SequencerBlock;
+use color_eyre::eyre::{eyre, Result};
+use sequencer_relayer::proto::SequencerMsg;
+use sequencer_relayer::sequencer_block::{
+    cosmos_tx_body_to_sequencer_msgs, parse_cosmos_tx, Namespace, SequencerBlock,
+};
+use serde::{Deserialize, Serialize};
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
     task,
 };
 
-use crate::execution_client::ExecutionRpcClient;
-
 use crate::config::Config;
-use crate::driver;
+use crate::execution_client::ExecutionRpcClient;
 
 pub(crate) type JoinHandle = task::JoinHandle<Result<()>>;
 
@@ -19,12 +21,10 @@ type Receiver = UnboundedReceiver<ExecutorCommand>;
 
 /// spawns a executor task and returns a tuple with the task's join handle
 /// and the channel for sending commands to this executor
-pub(crate) async fn spawn(
-    conf: &Config,
-    driver_tx: driver::Sender,
-) -> Result<(JoinHandle, Sender)> {
+pub(crate) async fn spawn(conf: &Config) -> Result<(JoinHandle, Sender)> {
     log::info!("Spawning executor task.");
-    let (mut executor, executor_tx) = Executor::new(conf, driver_tx).await?;
+    let (mut executor, executor_tx) =
+        Executor::new(&conf.rpc_address, Namespace::from_string(&conf.chain_id)?).await?;
     let join_handle = task::spawn(async move { executor.run().await });
     log::info!("Spawned executor task.");
     Ok((join_handle, executor_tx))
@@ -40,31 +40,26 @@ pub(crate) enum ExecutorCommand {
     Shutdown,
 }
 
-#[allow(dead_code)] // TODO - remove after developing
+//#[allow(dead_code)] // TODO - remove after developing
 struct Executor {
     /// Channel on which executor commands are received.
     cmd_rx: Receiver,
-    /// Channel on which the executor sends commands to the driver.
-    driver_tx: driver::Sender,
     /// The execution rpc client that we use to send messages to the execution service
     execution_rpc_client: ExecutionRpcClient,
+    /// Namespace ID
+    namespace: Namespace,
 }
 
 impl Executor {
     /// Creates a new Executor instance and returns a command sender and an alert receiver.
-    async fn new(conf: &Config, driver_tx: driver::Sender) -> Result<(Self, Sender)> {
+    async fn new(rpc_address: &str, namespace: Namespace) -> Result<(Self, Sender)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
-
-        // TODO - error handling
-        let execution_rpc_client = ExecutionRpcClient::new(&conf.rpc_address)
-            .await
-            .expect("uh oh");
-
+        let execution_rpc_client = ExecutionRpcClient::new(rpc_address).await?;
         Ok((
             Self {
                 cmd_rx,
-                driver_tx,
                 execution_rpc_client,
+                namespace,
             },
             cmd_tx,
         ))
@@ -90,15 +85,51 @@ impl Executor {
     }
 
     /// Uses RPC to send block to execution service
-    async fn execute_block(&mut self, _block: SequencerBlock) -> Result<()> {
-        // TODO - handle error properly
-        let fake_header: Vec<u8> = vec![0, 1, 255];
-        let fake_tx: Vec<Vec<u8>> = vec![vec![0, 1, 255], vec![1, 2, 3], vec![1, 0, 1, 1]];
+    async fn execute_block(&mut self, block: SequencerBlock) -> Result<()> {
+        let header = Header {
+            block_hash: block.block_hash.0,
+        };
+
+        // get transactions for our namespace
+        let Some(txs) = block.rollup_txs.get(&self.namespace) else {
+            return Err(eyre!("sequencer block did not contains txs for namespace"));
+        };
+
+        // parse cosmos sequencer transactions into rollup transactions
+        // by converting them to SequencerMsgs and extracting the `data` field
+        let txs = txs
+            .iter()
+            .filter_map(|tx| {
+                let body = parse_cosmos_tx(&tx.transaction).ok()?;
+                let msgs: Vec<SequencerMsg> = cosmos_tx_body_to_sequencer_msgs(body).ok()?;
+                if msgs.len() > 1 {
+                    // this should not happen and is a bug in the sequencer relayer
+                    return None;
+                }
+                let Some(msg) = msgs.first() else {
+                return None;
+            };
+                Some(msg.data.clone())
+            })
+            .collect::<Vec<_>>();
+
         self.execution_rpc_client
-            .call_do_block(fake_header, fake_tx)
-            .await
-            .expect("uh oh do block");
+            .call_do_block(header.to_bytes()?, txs)
+            .await?;
 
         Ok(())
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Header {
+    block_hash: Vec<u8>,
+}
+
+impl Header {
+    fn to_bytes(&self) -> Result<Vec<u8>> {
+        // TODO: don't use json, use our own serializer (or protobuf for now?)
+        let string = serde_json::to_string(self).map_err(|e| eyre!(e))?;
+        Ok(string.into_bytes())
     }
 }
