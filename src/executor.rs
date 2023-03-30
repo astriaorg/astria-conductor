@@ -10,6 +10,7 @@ use tokio::{
     task,
 };
 
+use crate::alert::{Alert, AlertSender};
 use crate::config::Config;
 use crate::execution_client::ExecutionRpcClient;
 
@@ -22,11 +23,12 @@ type Receiver = UnboundedReceiver<ExecutorCommand>;
 
 /// spawns a executor task and returns a tuple with the task's join handle
 /// and the channel for sending commands to this executor
-pub(crate) async fn spawn(conf: &Config) -> Result<(JoinHandle, Sender)> {
+pub(crate) async fn spawn(conf: &Config, alert_tx: AlertSender) -> Result<(JoinHandle, Sender)> {
     log::info!("Spawning executor task.");
     let (mut executor, executor_tx) = Executor::new(
         &conf.execution_rpc_url,
         get_namespace(conf.chain_id.as_bytes()),
+        alert_tx,
     )
     .await?;
     let join_handle = task::spawn(async move { executor.run().await });
@@ -52,11 +54,19 @@ struct Executor {
     execution_rpc_client: ExecutionRpcClient,
     /// Namespace ID
     namespace: Namespace,
+
+    /// The channel on which the driver and tasks in the driver can post alerts
+    /// to the consumer of the driver.
+    alert_tx: AlertSender,
 }
 
 impl Executor {
     /// Creates a new Executor instance and returns a command sender and an alert receiver.
-    async fn new(rpc_address: &str, namespace: Namespace) -> Result<(Self, Sender)> {
+    async fn new(
+        rpc_address: &str,
+        namespace: Namespace,
+        alert_tx: AlertSender,
+    ) -> Result<(Self, Sender)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let execution_rpc_client = ExecutionRpcClient::new(rpc_address).await?;
         Ok((
@@ -64,6 +74,7 @@ impl Executor {
                 cmd_rx,
                 execution_rpc_client,
                 namespace,
+                alert_tx,
             },
             cmd_tx,
         ))
@@ -79,6 +90,9 @@ impl Executor {
                         "ExecutorCommand::BlockReceived height={}",
                         block.header.height
                     );
+                    self.alert_tx.send(Alert::BlockReceived {
+                        block_height: block.header.height.parse::<u64>()?,
+                    })?;
                     self.execute_block(*block).await?;
                 }
                 ExecutorCommand::Shutdown => {

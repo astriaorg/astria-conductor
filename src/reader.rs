@@ -68,6 +68,8 @@ impl Reader {
     ) -> Result<(Self, Sender)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let celestia_client = CelestiaClient::new(celestia_node_url.to_owned())?;
+
+        // TODO: we should probably pass in the height we want to start at from some genesis/config file
         let curr_block_height = celestia_client.get_latest_height().await?;
         Ok((
             Self {
