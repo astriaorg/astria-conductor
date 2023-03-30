@@ -13,10 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      # needed to build astria-rpc
       - uses: bufbuild/buf-setup-action@v1
         with:
           version: "1.15.1"
           github_token: ${{ github.token }}
+      # needed to build sequencer-relayer
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/cache@v1
         with:
           path: ~/.cargo/registry
@@ -41,10 +47,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: bufbuild/buf-setup-action@v1
-        with:
-          version: "1.15.1"
-          github_token: ${{ github.token }}
       - uses: actions/cache@v1
         with:
           path: ~/.cargo/registry
