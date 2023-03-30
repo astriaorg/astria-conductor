@@ -3,10 +3,11 @@
 
 use color_eyre::eyre::{eyre, Result};
 use futures::future::{poll_fn, FutureExt};
-use log::{error, info};
+use log::info;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
 use std::pin::Pin;
+use std::sync::Mutex;
 
 use crate::alert::Alert;
 use crate::executor::ExecutorCommand;
@@ -42,6 +43,8 @@ pub(crate) struct Driver {
     executor_join_handle: executor::JoinHandle,
 
     alert_tx: AlertSender,
+
+    is_shutdown: Mutex<bool>,
 }
 
 impl Driver {
@@ -58,6 +61,7 @@ impl Driver {
             executor_tx,
             executor_join_handle,
             alert_tx,
+            is_shutdown: Mutex::new(false),
         })
     }
 
@@ -104,13 +108,18 @@ impl Driver {
                 }
             }
         }
-        error!("Driver event loop exited unexpectedly.");
+
         Ok(())
     }
 
     /// Sends shutdown commands to the other actors.
     fn shutdown(&mut self) -> Result<()> {
-        // TODO: mutex to prevent double shutdown
+        let mut is_shutdown = self.is_shutdown.lock().unwrap();
+        if *is_shutdown {
+            return Ok(());
+        }
+        *is_shutdown = true;
+
         info!("Shutting down driver.");
         self.reader_tx.send(ReaderCommand::Shutdown)?;
         self.executor_tx.send(ExecutorCommand::Shutdown)?;
