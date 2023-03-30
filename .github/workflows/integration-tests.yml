@@ -65,7 +65,7 @@ jobs:
           toolchain: stable
           override: true
       - name: Start geth, metro, celestia, and sequencer-relayer.
-        run: docker-compose -f tests/docker/test-docker-compose.yml up
+        run: docker-compose -f tests/docker/test-docker-compose.yml -d up
       # TODO - sequencer-relayer
       - uses: actions-rs/cargo@v1
         with:
