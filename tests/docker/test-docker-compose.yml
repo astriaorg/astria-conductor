@@ -40,7 +40,6 @@ services:
       localnet:
         ipv4_address: 192.167.10.20
 
-  # TODO - sequencer-relayer
   geth0:
     container_name: geth0
     depends_on:
@@ -60,15 +59,39 @@ services:
       - bridge0
     # FIXME - use a tagged version eventually
     image: "ghcr.io/astriaorg/metro:latest"
+    healthcheck:
+      # test for existence of priv_validator_key.json, so that dependent services start correctly
+      test: test -f /root/.metro/config/priv_validator_key.json || exit 1
+      interval: 2s
+      timeout: 20s
+      retries: 10
     ports:
       - "26657:26657"
       - "1317:1317"
+    volumes:
+      - shared-volume:/root/.metro/config
     networks:
       localnet:
         ipv4_address: 192.167.10.40
 
+  relayer0:
+    container_name: relayer0
+    depends_on:
+      metro0:
+        condition: service_healthy
+      bridge0:
+        condition: service_started
+    # FIXME - use a tagged version eventually
+    image: "ghcr.io/astriaorg/sequencer-relayer:latest"
+    volumes:
+      - shared-volume:/root/.metro/config:ro
+    networks:
+      localnet:
+        ipv4_address: 192.167.10.50
+
 volumes:
   keyring-volume:
+  shared-volume:
 
 networks:
   localnet:
