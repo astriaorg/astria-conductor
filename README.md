@@ -46,6 +46,8 @@ cargo test
 ```
 
 ### Run w/ Docker (wip):
+* Make a new account in Metamask (or whichever method you prefer). Copy/paste the address into `tests/docker/.env` as `ACCOUNT_ID`. 
+  * This account will be allocated 300 ETH at startup.
 ```bash
 # NOTE - there are currently issues with restarting containers, so ensure we start from a clean slate
 ./tests/docker/clean-docker.sh
