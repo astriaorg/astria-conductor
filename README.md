@@ -57,6 +57,11 @@ docker-compose -f tests/docker/docker-compose.yml up
 
 # run the tests
 cargo test
+
+# cleanup the containers. 
+# this is necessary to run fairly often because of issues with the 
+# celestia image not handling restarts well.
+./tests/docker/cleanup-docker.sh  
 ```
 
 Known issues:
