@@ -70,10 +70,10 @@ services:
     image: "ghcr.io/astriaorg/metro:latest"
     healthcheck:
       # test for existence of priv_validator_key.json, so that dependent services start correctly
-      test: test -f /root/.metro/config/priv_validator_key.json || exit 1
-      interval: 2s
-      timeout: 20s
-      retries: 10
+      test: "test -f /root/.metro/config/priv_validator_key.json || exit 1 && wget -q --spider --tries=1 --timeout=5 http://localhost:1317/cosmos/base/tendermint/v1beta1/blocks/latest || exit 1"
+      interval: 1s
+      timeout: 30s
+      retries: 30
     ports:
       - "26657:26657"
       - "1317:1317"
