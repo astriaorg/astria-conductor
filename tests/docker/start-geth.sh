@@ -9,5 +9,4 @@ jq --arg accountId "$ACCOUNT_ID" \
 geth --datadir ~/.astriageth/ init genesis.json
 geth --datadir ~/.astriageth/ --http --http.port=8545 \
   --ws --ws.port=8545 --networkid=1337 --http.corsdomain='*' --ws.origins='*' \
-  --grpc --grpc.addr "0.0.0.0" --grpc.port 50051 \
-  --mine --miner.threads 1 --miner.etherbase="$ACCOUNT_ID"
+  --grpc --grpc.addr "0.0.0.0" --grpc.port 50051

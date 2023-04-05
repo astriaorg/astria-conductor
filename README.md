@@ -50,10 +50,10 @@ cargo test
   * This account will be allocated 300 ETH at startup.
 ```bash
 # NOTE - there are currently issues with restarting containers, so ensure we start from a clean slate
-./tests/docker/clean-docker.sh
+./tests/docker/cleanup-docker.sh
 
 # run the containers
-docker-compose -f tests/docker/docker-compose.yml up
+docker-compose -f tests/docker/docker-compose.yml up -d
 
 # run the tests
 cargo test
@@ -61,7 +61,7 @@ cargo test
 # cleanup the containers. 
 # this is necessary to run fairly often because of issues with the 
 # celestia image not handling restarts well.
-./tests/docker/cleanup-docker.sh  
+./tests/docker/cleanup-docker.sh
 ```
 
 Known issues:
