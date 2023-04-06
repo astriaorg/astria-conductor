@@ -1,5 +1,10 @@
 #!/bin/bash
 
+DEFAULT_ACCOUNT_ID="0xb0E31D878F49Ec0403A25944d6B1aE1bf05D17E1"
+
+# use default account id if ACCOUNT_ID envar is not set
+ACCOUNT_ID=${ACCOUNT_ID:-$DEFAULT_ACCOUNT_ID}
+
 # use jq to replace alloc value in genesis.json with ACCOUNT_ID envar
 mv genesis.json genesis.bak.json
 jq --arg accountId "$ACCOUNT_ID" \
