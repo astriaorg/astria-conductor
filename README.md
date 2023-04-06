@@ -16,7 +16,7 @@ rpc_address = "https://0.0.0.0:50051"
 
 
 ### Tests (with Docker):
-* Make a new account in Metamask (or whichever method you prefer). Copy/paste the address into `tests/docker/.env` as `ACCOUNT_ID`. 
+* Optional: Make a new account in Metamask (or whichever method you prefer). Copy/paste the address into `tests/docker/.env` as `ACCOUNT_ID`. Otherwise, the default account id will be used.
   * This account will be allocated 300 ETH at startup.
 ```bash
 # NOTE - there are currently issues with restarting containers, so ensure we start from a clean slate
