@@ -23,7 +23,7 @@ rpc_address = "https://0.0.0.0:50051"
 ./tests/docker/cleanup-docker.sh
 
 # run the containers
-docker-compose -f tests/docker/docker-compose.yml up -d
+docker-compose -f tests/docker/test-docker-compose.yml up -d   
 
 # run the tests
 cargo test
