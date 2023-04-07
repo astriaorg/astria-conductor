@@ -121,7 +121,8 @@ impl Executor {
 
     /// Uses RPC to send block to execution service
     async fn execute_block(&mut self, block: SequencerBlock) -> Result<()> {
-        let prev_state_root = self.execution_state.clone();
+        let prev_block_hash = self.execution_state.clone();
+        info!("executing block {} with parent block hash {}", block.header.height, hex::encode(&prev_block_hash));
 
         // get transactions for our namespace
         let Some(txs) = block.rollup_txs.get(&self.namespace) else {
@@ -154,7 +155,7 @@ impl Executor {
         let timestamp = time_conversion(&*block.header.time);
 
         let response = self.execution_rpc_client
-            .call_do_block(prev_state_root, txs, timestamp)
+            .call_do_block(prev_block_hash, txs, timestamp)
             .await?;
         self.execution_state = response.state_root;
 

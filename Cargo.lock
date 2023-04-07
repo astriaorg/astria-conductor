@@ -100,6 +100,7 @@ dependencies = [
  "figment",
  "flexi_logger",
  "futures",
+ "hex",
  "log",
  "prost-types",
  "rs-cnc 0.1.0 (git+https://github.com/astriaorg/rs-cnc?rev=e0b45d6)",
