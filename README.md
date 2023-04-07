@@ -34,8 +34,23 @@ cargo test
 ./tests/docker/cleanup-docker.sh
 ```
 
+### Running with Docker:
+```bash
+# NOTE - there are currently issues with restarting containers, so ensure we start from a clean slate
+./tests/docker/cleanup-docker.sh
+
+# run the containers
+docker-compose -f tests/docker/test-docker-compose.yml up -d   
+
+# follow container logs. -f is for follow, -t is for timestamps
+docker logs -f -t geth0
+
+# follow all container logs. You must specify the compose file if not ran from the same directory.
+docker-compose -f tests/docker/test-docker-compose.yml logs --tail=0 -f -t
+```
+
 Known issues:
-* can't stop and restart bridge or metro container successfully
+* can't stop and restart bridge or metro container successfully. You must use `./tests/docker/cleanup-docker.sh`
 
 ### Tests (old way without Docker. Using Docker is recommended.)
 
