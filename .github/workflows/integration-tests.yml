@@ -67,7 +67,7 @@ jobs:
           toolchain: stable
           override: true
       - name: Start geth, metro, celestia, and sequencer-relayer.
-        run: docker-compose -f tests/docker/test-docker-compose.yml up -d
+        run: touch tests/docker/.env && docker-compose -f tests/docker/test-docker-compose.yml up -d
       - name: Run integration tests.
         # must wait till metro is available before running tests
         # FIXME - this isn't good enough, we need to wait for relayer to get going
