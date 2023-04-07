@@ -170,8 +170,6 @@ mod test {
             .await
             .unwrap();
 
-        // let blocks = reader.get_new_blocks().await.unwrap();
-
         // FIXME - this is NOT a good test, but it gets us to a passing state.
         let mut blocks = vec![];
         for _ in 0..30 {
