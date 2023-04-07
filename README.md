@@ -40,7 +40,10 @@ cargo test
 ./tests/docker/cleanup-docker.sh
 
 # run the containers
-docker-compose -f tests/docker/test-docker-compose.yml up -d   
+docker-compose -f tests/docker/test-docker-compose.yml up -d
+
+# run the conductor
+cargo run   
 
 # follow container logs. -f is for follow, -t is for timestamps
 docker logs -f -t geth0
