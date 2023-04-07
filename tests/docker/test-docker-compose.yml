@@ -53,6 +53,7 @@ services:
     volumes:
       - ${PWD}/tests/docker/start-geth.sh:/start-geth.sh:ro
     ports:
+      - "8545:8545"
       - "50051:50051"
     entrypoint: [
         "/start-geth.sh"
