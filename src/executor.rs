@@ -155,7 +155,7 @@ impl Executor {
             })
             .collect::<Vec<_>>();
 
-        let timestamp = time_conversion(&*block.header.time);
+        let timestamp = time_conversion(&block.header.time);
 
         let response = self
             .execution_rpc_client

@@ -95,8 +95,10 @@ name = "astria-conductor"
 version = "0.1.0"
 dependencies = [
  "astria-execution-apis-rpc",
+ "bech32",
  "clap",
  "color-eyre",
+ "ed25519-dalek",
  "figment",
  "flexi_logger",
  "futures",
@@ -1818,7 +1820,7 @@ dependencies = [
 [[package]]
 name = "sequencer-relayer"
 version = "0.1.0"
-source = "git+https://github.com/astriaorg/sequencer-relayer?rev=e07604ea859de65b9f4250e904a05230852da532#e07604ea859de65b9f4250e904a05230852da532"
+source = "git+https://github.com/astriaorg/sequencer-relayer?rev=df321d376121efffebe77fe5d580672750114da6#df321d376121efffebe77fe5d580672750114da6"
 dependencies = [
  "base64 0.21.0",
  "bech32",
