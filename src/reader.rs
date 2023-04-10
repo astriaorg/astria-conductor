@@ -1,5 +1,5 @@
 use bech32::{self, ToBase32, Variant};
-use color_eyre::eyre::{eyre, Result, WrapErr};
+use color_eyre::eyre::{bail, eyre, Result, WrapErr};
 use log::{error, info, warn};
 use sequencer_relayer::{
     da::{CelestiaClient, SequencerNamespaceData, SignedNamespaceData},
@@ -190,21 +190,21 @@ impl Reader {
         .wrap_err("failed converting bytes to bech32 address")?;
 
         if received_proposer_address != expected_proposer_address {
-            return Err(eyre!(
+            bail!(
                 "proposer address mismatch: expected {}, got {}",
                 expected_proposer_address,
                 received_proposer_address
-            ));
+            );
         }
 
         // verify the namespace data signing public key matches the proposer address
         let res_address = public_key_to_address(&data.public_key.0)?;
         if res_address != expected_proposer_address {
-            return Err(eyre!(
+            bail!(
                 "public key mismatch: expected {}, got {}",
                 expected_proposer_address,
                 res_address
-            ));
+            );
         }
 
         // verify the block signature
