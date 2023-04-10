@@ -211,9 +211,10 @@ impl Reader {
         data.verify()?;
 
         // finally, get the full SequencerBlock
-        // this is kinda sus, the reason the public key type needs to be converted is due to serialization
+        // the reason the public key type needs to be converted is due to serialization
         // constraints, probably fix this later
         let public_key = ed25519_dalek::PublicKey::from_bytes(&data.public_key.0)?;
+        // pass the public key to `get_sequencer_block` which does the signature validation for us
         let block = self
             .celestia_client
             .get_sequencer_block(&data.data, Some(&public_key))
