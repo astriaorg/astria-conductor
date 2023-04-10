@@ -61,6 +61,12 @@ impl TendermintClient {
         })
     }
 
+    pub async fn get_proposer_address(&self, height: u64) -> eyre::Result<String> {
+        let mut validator_set = self.get_validator_set(height).await?;
+        let proposer = validator_set.get_proposer()?;
+        Ok(proposer.address)
+    }
+
     pub async fn get_validator_set(&self, height: u64) -> eyre::Result<ValidatorSet> {
         let endpoint: String = format!("{}{}{}", self.endpoint, VALIDATOR_SET_ENDPOINT, height);
         self.do_get::<EmptyRequest, ValidatorSet>(endpoint, None)

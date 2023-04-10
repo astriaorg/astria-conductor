@@ -8,6 +8,10 @@ pub struct Cli {
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub celestia_node_url: Option<String>,
 
+    #[arg(long = "tendermint-url", default_value = "http://localhost:1317")]
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub tendermint_url: Option<String>,
+
     /// Chain ID as a string; this should correspond to the `secondaryChainID`
     /// used when transactions are submitted to the sequencer.
     #[arg(long = "chain-id", default_value = "ethereum")]

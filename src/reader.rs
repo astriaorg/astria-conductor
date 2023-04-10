@@ -8,6 +8,7 @@ use tokio::{
 
 use crate::config::Config;
 use crate::executor;
+use crate::tendermint::TendermintClient;
 
 pub(crate) type JoinHandle = task::JoinHandle<Result<()>>;
 
@@ -23,7 +24,8 @@ pub(crate) async fn spawn(
     executor_tx: executor::Sender,
 ) -> Result<(JoinHandle, Sender)> {
     info!("Spawning reader task.");
-    let (mut reader, reader_tx) = Reader::new(&conf.celestia_node_url, executor_tx).await?;
+    let (mut reader, reader_tx) =
+        Reader::new(&conf.celestia_node_url, &conf.tendermint_url, executor_tx).await?;
     let join_handle = task::spawn(async move { reader.run().await });
     info!("Spawned reader task.");
     Ok((join_handle, reader_tx))
@@ -49,11 +51,17 @@ struct Reader {
 
     /// the last block height fetched from Celestia
     curr_block_height: u64,
+
+    tendermint_client: TendermintClient,
 }
 
 impl Reader {
     /// Creates a new Reader instance and returns a command sender and an alert receiver.
-    async fn new(celestia_node_url: &str, executor_tx: executor::Sender) -> Result<(Self, Sender)> {
+    async fn new(
+        celestia_node_url: &str,
+        tendermint_url: &str,
+        executor_tx: executor::Sender,
+    ) -> Result<(Self, Sender)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let celestia_client = CelestiaClient::new(celestia_node_url.to_owned())?;
 
@@ -65,6 +73,7 @@ impl Reader {
                 executor_tx,
                 celestia_client,
                 curr_block_height,
+                tendermint_client: TendermintClient::new(tendermint_url.to_owned())?,
             },
             cmd_tx,
         ))
@@ -123,6 +132,17 @@ impl Reader {
                     // sequencer block's height
                     let height = block.header.height.parse::<u64>()?;
                     info!("got sequencer block with height: {:?}", height);
+
+                    // find proposer address for this height
+                    let proposer_address = self
+                        .tendermint_client
+                        .get_proposer_address(height)
+                        .await
+                        .map_err(|e| eyre!("failed to get proposer address: {}", e))?;
+
+                    // check if the proposer address matches the sequencer block's proposer
+                    // and verify the block signature
+
                     blocks.push(block);
                 }
                 Err(e) => {
@@ -160,14 +180,19 @@ mod test {
     use super::*;
 
     const DEFAULT_CELESTIA_ENDPOINT: &str = "http://localhost:26659";
+    const DEFAULT_TENDERMINT_ENDPOINT: &str = "http://localhost:1317";
 
     #[tokio::test]
     async fn test_reader_get_new_blocks() {
         let (executor_tx, _) = mpsc::unbounded_channel();
 
-        let (mut reader, _reader_tx) = Reader::new(DEFAULT_CELESTIA_ENDPOINT, executor_tx)
-            .await
-            .unwrap();
+        let (mut reader, _reader_tx) = Reader::new(
+            DEFAULT_CELESTIA_ENDPOINT,
+            DEFAULT_TENDERMINT_ENDPOINT,
+            executor_tx,
+        )
+        .await
+        .unwrap();
 
         let blocks = reader.get_new_blocks().await.unwrap();
         assert!(blocks.len() > 0);

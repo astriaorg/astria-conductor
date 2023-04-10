@@ -17,7 +17,7 @@ log = "0.4.17"
 prost-types = "0.11.8"
 reqwest = { version = "0.11", features = ["json"] }
 rs-cnc = { git = "https://github.com/astriaorg/rs-cnc", rev = "e0b45d6" }
-sequencer-relayer = { git = "https://github.com/astriaorg/sequencer-relayer", rev = "f719a7ff79562efe50e9ce9e542bbf415b9550c2" }
+sequencer-relayer = { git = "https://github.com/astriaorg/sequencer-relayer", rev = "e07604ea859de65b9f4250e904a05230852da532" }
 serde = "1.0.152"
 serde_json = "1.0"
 thiserror = "1.0.38"
