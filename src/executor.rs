@@ -80,7 +80,7 @@ impl Executor {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let mut execution_rpc_client = ExecutionRpcClient::new(rpc_address).await?;
         let init_state_response = execution_rpc_client.call_init_state().await?;
-        let execution_state = init_state_response.state_root;
+        let execution_state = init_state_response.block_hash;
         Ok((
             Self {
                 cmd_rx,
@@ -161,7 +161,7 @@ impl Executor {
             .execution_rpc_client
             .call_do_block(prev_block_hash, txs, timestamp)
             .await?;
-        self.execution_state = response.state_root;
+        self.execution_state = response.block_hash;
 
         Ok(())
     }
