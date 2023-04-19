@@ -46,8 +46,7 @@ services:
       - ./.env
     depends_on:
       - bridge0
-#    image: "ghcr.io/astriaorg/go-ethereum:0.0.1"
-    image: "ghcr.io/astriaorg/go-ethereum:metro-rpc-override"
+    image: "ghcr.io/astriaorg/go-ethereum:0.0.3"
     volumes:
       - ${PWD}/tests/docker/start-geth.sh:/start-geth.sh:ro
       - shared-volume:/root/.metro:ro
@@ -65,7 +64,7 @@ services:
     container_name: metro0
     depends_on:
       - bridge0
-    image: "ghcr.io/astriaorg/metro:0.0.2"
+    image: "ghcr.io/astriaorg/metro:0.0.3"
     healthcheck:
       # test for existence of priv_validator_key.json, so that dependent services start correctly
       test: "test -f /root/.metro/config/priv_validator_key.json || exit 1 && wget -q --spider --tries=1 --timeout=5 http://localhost:1317/cosmos/base/tendermint/v1beta1/blocks/latest || exit 1"
