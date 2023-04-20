@@ -45,7 +45,8 @@ services:
     env_file:
       - ./.env
     depends_on:
-      - bridge0
+      metro0:
+        condition: service_healthy
     image: "ghcr.io/astriaorg/go-ethereum:0.0.3"
     volumes:
       - ${PWD}/tests/docker/start-geth.sh:/start-geth.sh:ro
