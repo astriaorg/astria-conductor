@@ -47,11 +47,11 @@ services:
     depends_on:
       - bridge0
     # FIXME - use a tagged version eventually
-#    image: "ghcr.io/astriaorg/go-ethereum:latest"
-#    image: "ghcr.io/astriaorg/go-ethereum:local"
-    image: "ghcr.io/astriaorg/go-ethereum:custom-mempool"
+    image: "ghcr.io/astriaorg/go-ethereum:latest"
     volumes:
       - ${PWD}/tests/docker/start-geth.sh:/start-geth.sh:ro
+    expose:
+      - "50051/tcp"
     ports:
       - "8545:8545"
       - "50051:50051"
