@@ -7,8 +7,12 @@ use figment::{
     Figment,
 };
 use log::{error, info};
-use tokio::sync::mpsc;
-use tokio::{signal, time};
+use tokio::time;
+use tokio::{
+    select,
+    signal::unix::{signal, SignalKind},
+    sync::{mpsc, watch},
+};
 
 use astria_conductor::alert::Alert;
 use astria_conductor::cli::Cli;
@@ -37,6 +41,11 @@ async fn run() -> Result<()> {
     log::info!("Using Celestia node at {}", conf.celestia_node_url);
     log::info!("Using execution node at {}", conf.execution_rpc_url);
 
+    let SignalReceiver {
+        mut reload_rx,
+        mut stop_rx,
+    } = spawn_signal_handler();
+
     // spawn our driver
     let (alert_tx, mut alert_rx) = mpsc::unbounded_channel();
     let mut driver = Driver::new(conf, alert_tx).await?;
@@ -53,7 +62,23 @@ async fn run() -> Result<()> {
     let mut interval = time::interval(Duration::from_secs(3));
 
     loop {
-        tokio::select! {
+        select! {
+            // FIXME: The bias should only be on the signal channels. The the two
+            //       handlers should have the same bias.
+            biased;
+
+            _ = stop_rx.changed() => {
+                info!("shutting down conductor");
+                if let Some(e) = driver_tx.send(DriverCommand::Shutdown).err() {
+                    error!("error sending Shutdown command to driver: {}", e);
+                }
+                break;
+            }
+
+            _ = reload_rx.changed() => {
+                info!("reloading is currently not implemented");
+            }
+
             // handle alerts from the driver
             Some(alert) = alert_rx.recv() => {
                 match alert {
@@ -75,15 +100,47 @@ async fn run() -> Result<()> {
                     break;
                 }
             }
-            // shutdown properly on ctrl-c
-            _ = signal::ctrl_c() => {
-                if let Some(e) = driver_tx.send(DriverCommand::Shutdown).err() {
-                    error!("error sending Shutdown command to driver: {}", e);
-                }
-                break;
-            }
         }
     }
 
     Ok(())
+}
+
+struct SignalReceiver {
+    reload_rx: watch::Receiver<()>,
+    stop_rx: watch::Receiver<()>,
+}
+
+fn spawn_signal_handler() -> SignalReceiver {
+    let (stop_tx, stop_rx) = watch::channel(());
+    let (reload_tx, reload_rx) = watch::channel(());
+    tokio::spawn(async move {
+        let mut sighup = signal(SignalKind::hangup()).expect(
+            "setting a SIHGUP listerner should always work on linux; is this running on linux?",
+        );
+        let mut sigint = signal(SignalKind::interrupt()).expect(
+            "setting a SIGINT listerner should always work on linux; is this running on linux?",
+        );
+        let mut sigterm = signal(SignalKind::terminate()).expect(
+            "setting a SIGTERM listerner should always work on linux; is this running on linux?",
+        );
+        loop {
+            select! {
+                _ = sighup.recv() => {
+                    log::info!("received SIGHUP");
+                    let _ = reload_tx.send(());
+                }
+                _ = sigint.recv() => {
+                    log::info!("received SIGINT");
+                    let _ = stop_tx.send(());
+                }
+                _ = sigterm.recv() => {
+                    log::info!("received SIGTERM");
+                    let _ = stop_tx.send(());
+                }
+            }
+        }
+    });
+
+    SignalReceiver { reload_rx, stop_rx }
 }
