@@ -52,15 +52,14 @@ async fn run() -> Result<()> {
     //  messages from the sequencer
     let mut interval = time::interval(Duration::from_secs(3));
 
-    let mut run = true;
-    while run {
+    loop {
         tokio::select! {
             // handle alerts from the driver
             Some(alert) = alert_rx.recv() => {
                 match alert {
                     Alert::DriverError(error_string) => {
                         error!("error: {}", error_string);
-                        run = false;
+                        break;
                     }
                     Alert::BlockReceived{block_height} => {
                         info!("block received from DA layer; DA layer height: {}", block_height);
@@ -73,7 +72,7 @@ async fn run() -> Result<()> {
                     // the only error that can happen here is SendError which occurs
                     // if the driver's receiver channel is dropped
                     error!("error sending GetNewBlocks command to driver: {}", e);
-                    run = false;
+                    break;
                 }
             }
             // shutdown properly on ctrl-c
@@ -81,12 +80,8 @@ async fn run() -> Result<()> {
                 if let Some(e) = driver_tx.send(DriverCommand::Shutdown).err() {
                     error!("error sending Shutdown command to driver: {}", e);
                 }
-                run = false;
+                break;
             }
-        }
-
-        if !run {
-            break;
         }
     }
 
