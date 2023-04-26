@@ -91,6 +91,9 @@ spec:
       - /scripts/configure-geth-podman.sh
       name: configure-geth
       image: docker.io/stedolan/jq
+      volumeMounts:
+        - mountPath: /scripts/
+          name: scripts-volume
       envFrom:
         - configMapRef:
           name: geth-env
@@ -98,6 +101,9 @@ spec:
       - /scripts/init-geth-podman.sh
       name: init-geth
       image: ghcr.io/astriaorg/go-ethereum:0.0.3
+      volumeMounts:
+        - mountPath: /scripts/
+          name: scripts-volume
       envFrom:
         - configMapRef:
           name: geth-env
@@ -162,6 +168,8 @@ spec:
       volumeMounts:
         - mountPath: /home/relayer
           name: {{ relayer_home_volume }}
+        - mountPath: /root/.metro
+          name: {{ metro_home_volume }}
     - name: geth-executor
       command: ["/scripts/start-geth-podman.sh"]
       image: "ghcr.io/astriaorg/go-ethereum:0.0.3"
