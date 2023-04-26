@@ -36,14 +36,19 @@ static STOP_POD_TX: Lazy<UnboundedSender<String>> = Lazy::new(|| {
 });
 
 #[derive(Template)]
-#[template(path = "sequencer_relayer_stack.yaml.jinja2")]
+#[template(path = "conductor_stack.yaml.jinja2")]
 struct SequencerRelayerStack<'a> {
     pod_name: &'a str,
     celestia_home_volume: &'a str,
     metro_home_volume: &'a str,
     scripts_host_volume: &'a str,
+    executor_home_volume: &'a str,
+    relayer_home_volume: &'a str,
     bridge_host_port: u16,
     sequencer_host_port: u16,
+    executor_host_http_port: u16,
+    executor_host_grpc_port: u16,
+    // TODO - add relayer_host_port?
 }
 
 pub fn init_environment() -> Podman {
@@ -68,6 +73,8 @@ pub struct StackInfo {
     pub pod_name: String,
     pub bridge_host_port: u16,
     pub sequencer_host_port: u16,
+    pub executor_host_http_port: u16,
+    pub executor_host_grpc_port: u16,
     tx: UnboundedSender<String>,
 }
 
@@ -78,6 +85,10 @@ impl StackInfo {
 
     pub fn make_sequencer_endpoint(&self) -> String {
         format!("http://127.0.0.1:{}", self.sequencer_host_port,)
+    }
+
+    pub fn make_executor_endpoint(&self) -> String {
+        format!("http://127.0.0.0:{}", self.executor_host_http_port, )
     }
 }
 
@@ -94,11 +105,15 @@ impl Drop for StackInfo {
 
 pub async fn init_stack(podman: &Podman) -> StackInfo {
     let id = Uuid::new_v4().simple();
-    let pod_name = format!("sequencer_relayer_stack-{id}");
+    let pod_name = format!("conductor_stack-{id}");
     let celestia_home_volume = format!("celestia-home-volume-{id}");
     let metro_home_volume = format!("metro-home-volume-{id}");
+    let geth_home_volume = format!("geth-home-volume-{id}");
+    let relayer_home_volume = format!("relayer-home-volume-{id}");
     let bridge_host_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
     let sequencer_host_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
+    let executor_host_http_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
+    let executor_host_grpc_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
 
     let scripts_host_volume = format!("{}/containers/", env!("CARGO_MANIFEST_DIR"));
 
@@ -107,8 +122,12 @@ pub async fn init_stack(podman: &Podman) -> StackInfo {
         celestia_home_volume: &celestia_home_volume,
         metro_home_volume: &metro_home_volume,
         scripts_host_volume: &scripts_host_volume,
+        executor_home_volume: &geth_home_volume,
+        relayer_home_volume: &relayer_home_volume,
         bridge_host_port,
         sequencer_host_port,
+        executor_host_http_port,
+        executor_host_grpc_port,
     };
 
     let pod_kube_yaml = stack.render().unwrap();
@@ -117,6 +136,8 @@ pub async fn init_stack(podman: &Podman) -> StackInfo {
         pod_name,
         bridge_host_port,
         sequencer_host_port,
+        executor_host_http_port,
+        executor_host_grpc_port,
         tx: Lazy::force(&STOP_POD_TX).clone(),
     };
 
