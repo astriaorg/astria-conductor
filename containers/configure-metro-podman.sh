@@ -2,7 +2,7 @@
 
 set -o errexit -o nounset -o pipefail
 
-# change ports that we know metro metro will not receive messages on
+# change ports that we know metro will not receive messages on
 # so they won't interfere with celestia-app ports:
 #
 # ~/.metro # netstat -lntp

@@ -9,7 +9,8 @@ async fn should_build_podman() {
     let info = init_stack(&podman).await;
     wait_until_ready(&podman, &info.pod_name).await;
 
-    let cosmos_endpoint = info.make_sequencer_endpoint();
+    let cosmos_endpoint = info.make_sequencer_api_endpoint();
+    let cosmos_grpc_endpoint = info.make_sequencer_grpc_endpoint();
 
     // FIXME: use a more reliable check to ensure any blocks are
     // available on the sequencer. Right now we have to explicitly

@@ -33,6 +33,17 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: geth-env
+  namespace: default
+data:
+  # evm address corresponds to private key:
+  # da6ed55cb2894ac2c9c10209c09de8e8b9d109b910338d5bf3d747a7e1fc9eb9
+  evm_address: "0x966e6f22781EF6a6A82BBB4DB3df8E225DfD9488"
+  home_dir: "/home/geth"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: relayer-env
   namespace: default
 data:
@@ -90,10 +101,12 @@ spec:
     - command:
       - /scripts/configure-geth-podman.sh
       name: configure-geth
-      image: docker.io/stedolan/jq
+      image: ghcr.io/astriaorg/go-ethereum:0.0.3
       volumeMounts:
         - mountPath: /scripts/
           name: scripts-volume
+        - mountPath: /home/geth
+          name: {{ executor_home_volume }}
       envFrom:
         - configMapRef:
           name: geth-env
@@ -104,9 +117,14 @@ spec:
       volumeMounts:
         - mountPath: /scripts/
           name: scripts-volume
-      envFrom:
-        - configMapRef:
-          name: geth-env
+        - mountPath: /home/geth
+          name: {{ executor_home_volume }}
+      env:
+        - name: home_dir
+          valueFrom:
+            configMapKeyRef:
+              name: geth-env
+              key: home_dir
     - command:
       - /scripts/configure-metro-podman.sh
       name: configure-metro
@@ -130,10 +148,10 @@ spec:
         - configMapRef:
             name: celestia-env
       volumeMounts:
-      - mountPath: /scripts/
-        name: scripts-volume
-      - mountPath: /home/celestia
-        name: {{ celestia_home_volume }}
+        - mountPath: /scripts/
+          name: scripts-volume
+        - mountPath: /home/celestia
+          name: {{ celestia_home_volume }}
     - name: celestia-bridge
       command:
       - /scripts/start-bridge-podman.sh
@@ -155,6 +173,8 @@ spec:
       ports:
         - containerPort: 1318
           hostPort: {{ sequencer_host_port }}
+        - containerPort: 9101
+          hostPort: {{ sequencer_host_grpc_port }}
       volumeMounts:
         - mountPath: /scripts/
           name: scripts-volume
@@ -170,22 +190,27 @@ spec:
           name: {{ relayer_home_volume }}
         - mountPath: /root/.metro
           name: {{ metro_home_volume }}
+          readOnly: true
     - name: geth-executor
       command: ["/scripts/start-geth-podman.sh"]
       image: "ghcr.io/astriaorg/go-ethereum:0.0.3"
       volumeMounts:
         - mountPath: /scripts/
           name: scripts-volume
+          readOnly: true
         - mountPath: /home/geth
           name: {{ executor_home_volume }}
-        - mountPath: /home/metro
+        - mountPath: /root/.metro
           name: {{ metro_home_volume }}
+          readOnly: true
       envFrom:
         - configMapRef:
           name: geth-env
       env:
         - name: sequencer_host_port
           value: {{ sequencer_host_port }}
+        - name: sequencer_host_grpc_port
+          value: {{ sequencer_host_grpc_port }}
         - name: executor_host_http_port
           value: {{ executor_host_http_port }}
         - name: executor_host_grpc_port94
@@ -195,8 +220,6 @@ spec:
           hostPort: {{ executor_host_http_port }}
         - containerPort: 50051
           hostPort: {{ executor_host_grpc_port }}
-        - containerPort: 9090
-          hostPort: {{ sequencer_host_port }}
   hostname: test_sequencer_relayer
   restartPolicy: OnFailure
   volumes:

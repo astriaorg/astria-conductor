@@ -46,6 +46,7 @@ struct SequencerRelayerStack<'a> {
     relayer_home_volume: &'a str,
     bridge_host_port: u16,
     sequencer_host_port: u16,
+    sequencer_host_grpc_port: u16,
     executor_host_http_port: u16,
     executor_host_grpc_port: u16,
     // TODO - add relayer_host_port?
@@ -73,6 +74,7 @@ pub struct StackInfo {
     pub pod_name: String,
     pub bridge_host_port: u16,
     pub sequencer_host_port: u16,
+    pub sequencer_host_grpc_port: u16,
     pub executor_host_http_port: u16,
     pub executor_host_grpc_port: u16,
     tx: UnboundedSender<String>,
@@ -83,12 +85,16 @@ impl StackInfo {
         format!("http://127.0.0.1:{}", self.bridge_host_port,)
     }
 
-    pub fn make_sequencer_endpoint(&self) -> String {
+    pub fn make_sequencer_api_endpoint(&self) -> String {
         format!("http://127.0.0.1:{}", self.sequencer_host_port,)
     }
 
+    pub fn make_sequencer_grpc_endpoint(&self) -> String {
+        format!("http://127.0.0.1:{}", self.sequencer_host_grpc_port,)
+    }
+
     pub fn make_executor_endpoint(&self) -> String {
-        format!("http://127.0.0.0:{}", self.executor_host_http_port, )
+        format!("http://127.0.0.0:{}", self.executor_host_http_port,)
     }
 }
 
@@ -112,6 +118,7 @@ pub async fn init_stack(podman: &Podman) -> StackInfo {
     let relayer_home_volume = format!("relayer-home-volume-{id}");
     let bridge_host_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
     let sequencer_host_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
+    let sequencer_host_grpc_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
     let executor_host_http_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
     let executor_host_grpc_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
 
@@ -126,6 +133,7 @@ pub async fn init_stack(podman: &Podman) -> StackInfo {
         relayer_home_volume: &relayer_home_volume,
         bridge_host_port,
         sequencer_host_port,
+        sequencer_host_grpc_port,
         executor_host_http_port,
         executor_host_grpc_port,
     };
@@ -136,6 +144,7 @@ pub async fn init_stack(podman: &Podman) -> StackInfo {
         pod_name,
         bridge_host_port,
         sequencer_host_port,
+        sequencer_host_grpc_port,
         executor_host_http_port,
         executor_host_grpc_port,
         tx: Lazy::force(&STOP_POD_TX).clone(),
