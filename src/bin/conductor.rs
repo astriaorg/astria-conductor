@@ -7,11 +7,11 @@ use figment::{
     Figment,
 };
 use log::{error, info};
-use tokio::time;
 use tokio::{
     select,
     signal::unix::{signal, SignalKind},
     sync::{mpsc, watch},
+    time,
 };
 
 use astria_conductor::alert::Alert;
@@ -116,13 +116,13 @@ fn spawn_signal_handler() -> SignalReceiver {
     let (reload_tx, reload_rx) = watch::channel(());
     tokio::spawn(async move {
         let mut sighup = signal(SignalKind::hangup()).expect(
-            "setting a SIHGUP listerner should always work on linux; is this running on linux?",
+            "setting a SIGHUP listener should always work on linux; is this running on linux?",
         );
         let mut sigint = signal(SignalKind::interrupt()).expect(
-            "setting a SIGINT listerner should always work on linux; is this running on linux?",
+            "setting a SIGINT listener should always work on linux; is this running on linux?",
         );
         let mut sigterm = signal(SignalKind::terminate()).expect(
-            "setting a SIGTERM listerner should always work on linux; is this running on linux?",
+            "setting a SIGTERM listener should always work on linux; is this running on linux?",
         );
         loop {
             select! {
