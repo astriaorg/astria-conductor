@@ -9,9 +9,7 @@ data:
   chainid: "test"
   keyring_backend: "test"
   validator_key_name: "validator"
-  # evm address corresponds to private key:
-  # da6ed55cb2894ac2c9c10209c09de8e8b9d109b910338d5bf3d747a7e1fc9eb9
-  evm_address: "0x966e6f22781EF6a6A82BBB4DB3df8E225DfD9488"
+  evm_address: "{{ evm_address }}"
   home_dir: "/home/celestia"
 ---
 apiVersion: v1
@@ -25,9 +23,7 @@ data:
   chainid: "test"
   keyring_backend: "test"
   validator_key_name: "validator"
-  # evm address corresponds to private key:
-  # da6ed55cb2894ac2c9c10209c09de8e8b9d109b910338d5bf3d747a7e1fc9eb9
-  evm_address: "0x966e6f22781EF6a6A82BBB4DB3df8E225DfD9488"
+  evm_address: "{{ evm_address }}"
   home_dir: "/home/metro"
 ---
 apiVersion: v1
@@ -36,9 +32,7 @@ metadata:
   name: geth-env
   namespace: default
 data:
-  # evm address corresponds to private key:
-  # da6ed55cb2894ac2c9c10209c09de8e8b9d109b910338d5bf3d747a7e1fc9eb9
-  evm_address: "0x966e6f22781EF6a6A82BBB4DB3df8E225DfD9488"
+  evm_address: "{{ evm_address }}"
   home_dir: "/home/geth"
 ---
 apiVersion: v1
@@ -47,9 +41,7 @@ metadata:
   name: relayer-env
   namespace: default
 data:
-  # evm address corresponds to private key:
-  # da6ed55cb2894ac2c9c10209c09de8e8b9d109b910338d5bf3d747a7e1fc9eb9
-  evm_address: "0x966e6f22781EF6a6A82BBB4DB3df8E225DfD9488"
+  evm_address: "{{ evm_address }}"
   home_dir: "/home/relayer"
 ---
 apiVersion: v1
@@ -109,7 +101,7 @@ spec:
           name: {{ executor_home_volume }}
       envFrom:
         - configMapRef:
-          name: geth-env
+            name: geth-env
     - command:
       - /scripts/init-geth-podman.sh
       name: init-geth
@@ -119,12 +111,9 @@ spec:
           name: scripts-volume
         - mountPath: /home/geth
           name: {{ executor_home_volume }}
-      env:
-        - name: home_dir
-          valueFrom:
-            configMapKeyRef:
-              name: geth-env
-              key: home_dir
+      envFrom:
+        - configMapRef:
+            name: geth-env
     - command:
       - /scripts/configure-metro-podman.sh
       name: configure-metro
