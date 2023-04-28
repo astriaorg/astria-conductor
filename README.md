@@ -24,6 +24,7 @@ podman run --rm \
   -e metro_home_volume=metro-home-vol \
   -e executor_home_volume=executor-home-vol \
   -e relayer_home_volume=relayer-home-vol \
+  -e geth_local_account=0xb0E31D878F49Ec0403A25944d6B1aE1bf05D17E1 \
   -e bridge_host_port=26659 \
   -e sequencer_host_port=1318 \
   -e sequencer_host_grpc_port=9101 \
