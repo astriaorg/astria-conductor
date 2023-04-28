@@ -3,8 +3,8 @@
 set -o errexit -o nounset
 
 DEFAULT_ACCOUNT_ID="0xb0E31D878F49Ec0403A25944d6B1aE1bf05D17E1"
-# use default account id if evm_address envar is not set
-ACCOUNT_ID=${evm_address:-$DEFAULT_ACCOUNT_ID}
+# use default account id if genesis_address envar is not set
+ACCOUNT_ID=${genesis_address:-$DEFAULT_ACCOUNT_ID}
 
 echo "Modifying genesis.json to allocate funds to $ACCOUNT_ID"
 

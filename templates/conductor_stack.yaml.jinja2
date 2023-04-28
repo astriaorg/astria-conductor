@@ -9,7 +9,9 @@ data:
   chainid: "test"
   keyring_backend: "test"
   validator_key_name: "validator"
-  evm_address: "{{ evm_address }}"
+  # evm address corresponds to private key:
+  # da6ed55cb2894ac2c9c10209c09de8e8b9d109b910338d5bf3d747a7e1fc9eb9
+  evm_address: "0x966e6f22781EF6a6A82BBB4DB3df8E225DfD9488"
   home_dir: "/home/celestia"
 ---
 apiVersion: v1
@@ -23,7 +25,9 @@ data:
   chainid: "test"
   keyring_backend: "test"
   validator_key_name: "validator"
-  evm_address: "{{ evm_address }}"
+  # evm address corresponds to private key:
+  # da6ed55cb2894ac2c9c10209c09de8e8b9d109b910338d5bf3d747a7e1fc9eb9
+  evm_address: "0x966e6f22781EF6a6A82BBB4DB3df8E225DfD9488"
   home_dir: "/home/metro"
 ---
 apiVersion: v1
@@ -32,7 +36,7 @@ metadata:
   name: geth-env
   namespace: default
 data:
-  evm_address: "{{ evm_address }}"
+  genesis_address: "{{ genesis_address }}"
   home_dir: "/home/geth"
 ---
 apiVersion: v1
@@ -41,7 +45,6 @@ metadata:
   name: relayer-env
   namespace: default
 data:
-  evm_address: "{{ evm_address }}"
   home_dir: "/home/relayer"
 ---
 apiVersion: v1
@@ -194,7 +197,7 @@ spec:
           readOnly: true
       envFrom:
         - configMapRef:
-          name: geth-env
+            name: geth-env
       env:
         - name: sequencer_host_port
           value: {{ sequencer_host_port }}
