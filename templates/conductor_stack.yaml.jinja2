@@ -22,7 +22,7 @@ metadata:
 data:
   coins: "1000000000000000utick"
   validator_stake: "5000000000utick"
-  chainid: "test"
+  chainid: "private"
   keyring_backend: "test"
   validator_key_name: "validator"
   # evm address corresponds to private key:
@@ -165,7 +165,7 @@ spec:
       ports:
         - containerPort: 1318
           hostPort: {{ sequencer_host_port }}
-        - containerPort: 9101
+        - containerPort: 9100
           hostPort: {{ sequencer_host_grpc_port }}
       volumeMounts:
         - mountPath: /scripts/
