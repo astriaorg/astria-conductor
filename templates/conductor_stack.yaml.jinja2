@@ -127,6 +127,10 @@ spec:
             configMapKeyRef:
               name: metro-env
               key: home_dir
+        - name: sequencer_host_port
+          value: {{ sequencer_host_port }}
+        - name: sequencer_host_grpc_port
+          value: {{ sequencer_host_grpc_port }}
       volumeMounts:
         - mountPath: /scripts/
           name: scripts-volume
@@ -177,7 +181,10 @@ spec:
             name: metro-env
     - name: relayer
       image: "ghcr.io/astriaorg/sequencer-relayer:latest"
-      command: ["/usr/local/bin/relayer", "--sequencer-endpoint=http://localhost:1318", "--validator-key-file=/root/.metro/config/priv_validator_key.json"]
+      command: ["/usr/local/bin/relayer"]
+      args:
+        - "--sequencer-endpoint=http://localhost:{{ sequencer_host_port }}"
+        - "--validator-key-file=/root/.metro/config/priv_validator_key.json"
       volumeMounts:
         - mountPath: /home/relayer
           name: {{ relayer_home_volume }}
@@ -200,13 +207,11 @@ spec:
         - configMapRef:
             name: geth-env
       env:
-        - name: sequencer_host_port
-          value: {{ sequencer_host_port }}
         - name: sequencer_host_grpc_port
           value: {{ sequencer_host_grpc_port }}
         - name: executor_host_http_port
           value: {{ executor_host_http_port }}
-        - name: executor_host_grpc_port94
+        - name: executor_host_grpc_port
           value: {{ executor_host_grpc_port }}
       ports:
         - containerPort: 8545
