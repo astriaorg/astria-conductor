@@ -177,7 +177,7 @@ spec:
             name: metro-env
     - name: relayer
       image: "ghcr.io/astriaorg/sequencer-relayer:latest"
-      command: ["/usr/local/bin/relayer", "--sequencer-endpoint=http://localhost:1318", "--validator_key_file=/root/.metro/config/priv_validator_key.json"]
+      command: ["/usr/local/bin/relayer", "--sequencer-endpoint=http://localhost:1318", "--validator-key-file=/root/.metro/config/priv_validator_key.json"]
       volumeMounts:
         - mountPath: /home/relayer
           name: {{ relayer_home_volume }}
