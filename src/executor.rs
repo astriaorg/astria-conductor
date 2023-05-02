@@ -48,7 +48,12 @@ fn time_conversion(value: &str) -> Option<Timestamp> {
 
 #[derive(Debug)]
 pub(crate) enum ExecutorCommand {
-    /// Command for when a block is received
+    /// used when a block is received from the gossip network
+    BlockReceivedGossip {
+        block: Box<SequencerBlock>,
+    },
+    /// used when a block is received from the reader (Celestia)
+    /// TODO: rename
     BlockReceived {
         block: Box<SequencerBlock>,
     },
@@ -98,7 +103,18 @@ impl Executor {
 
         while let Some(cmd) = self.cmd_rx.recv().await {
             match cmd {
+                ExecutorCommand::BlockReceivedGossip { block } => {
+                    log::info!(
+                        "ExecutorCommand::BlockReceivedGossip height={}",
+                        block.header.height
+                    );
+                    self.alert_tx.send(Alert::BlockReceived {
+                        block_height: block.header.height.parse::<u64>()?,
+                    })?;
+                    self.execute_block(*block).await?;
+                }
                 ExecutorCommand::BlockReceived { block } => {
+                    // TODO: don't execute here, just mark as final?
                     log::info!(
                         "ExecutorCommand::BlockReceived height={}",
                         block.header.height
@@ -106,7 +122,7 @@ impl Executor {
                     self.alert_tx.send(Alert::BlockReceived {
                         block_height: block.header.height.parse::<u64>()?,
                     })?;
-                    self.execute_block(*block).await?;
+                    // self.execute_block(*block).await?;
                 }
                 ExecutorCommand::Shutdown => {
                     log::info!("Shutting down executor event loop.");

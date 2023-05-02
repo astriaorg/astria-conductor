@@ -86,6 +86,9 @@ async fn run() -> Result<()> {
                         error!("error: {}", error_string);
                         break;
                     }
+                    Alert::BlockReceivedGossip{block_height} => {
+                        info!("block received from p2p network; height: {}", block_height);
+                    }
                     Alert::BlockReceived{block_height} => {
                         info!("block received from DA layer; DA layer height: {}", block_height);
                     }

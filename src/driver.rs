@@ -2,15 +2,23 @@
 //! necessary for this reader/validator.
 
 use color_eyre::eyre::{eyre, Result};
-use futures::future::{poll_fn, FutureExt};
-use log::info;
-use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
+use futures::{
+    future::{poll_fn, FutureExt},
+    StreamExt,
+};
+use log::{debug, info};
+use sequencer_relayer::sequencer_block::SequencerBlock;
+use tokio::{
+    select,
+    sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
+};
 
 use std::pin::Pin;
 use std::sync::Mutex;
 
 use crate::alert::Alert;
 use crate::executor::ExecutorCommand;
+use crate::network::{Event as NetworkEvent, GossipNetwork};
 use crate::reader::ReaderCommand;
 use crate::{alert::AlertSender, config::Config, executor, reader};
 
@@ -42,6 +50,8 @@ pub struct Driver {
     executor_tx: executor::Sender,
     executor_join_handle: executor::JoinHandle,
 
+    network: GossipNetwork,
+
     alert_tx: AlertSender,
 
     is_shutdown: Mutex<bool>,
@@ -60,6 +70,7 @@ impl Driver {
             reader_join_handle,
             executor_tx,
             executor_join_handle,
+            network: GossipNetwork::new()?,
             alert_tx,
             is_shutdown: Mutex::new(false),
         })
@@ -68,44 +79,81 @@ impl Driver {
     /// Runs the Driver event loop.
     pub async fn run(&mut self) -> Result<()> {
         info!("Starting driver event loop.");
-        while let Some(cmd) = self.cmd_rx.recv().await {
-            // TODO: these are kind of janky, we might want to move to a polling-based architecture
-            if let Some(Ok(res)) = poll_fn(|cx| {
-                Pin::new(&mut self.reader_join_handle)
-                    .as_mut()
-                    .poll_unpin(cx)
-            })
-            .now_or_never()
-            {
-                self.alert_tx.send(Alert::DriverError(eyre!(
-                    "Reader task exited unexpectedly."
-                )))?;
-                return res;
-            }
-
-            if let Some(Ok(res)) = poll_fn(|cx| {
-                Pin::new(&mut self.executor_join_handle)
-                    .as_mut()
-                    .poll_unpin(cx)
-            })
-            .now_or_never()
-            {
-                self.alert_tx.send(Alert::DriverError(eyre!(
-                    "Executor task exited unexpectedly."
-                )))?;
-                return res;
-            }
-
-            match cmd {
-                DriverCommand::Shutdown => {
-                    self.shutdown()?;
-                    break;
+        loop {
+            select! {
+                res = self.network.0.next() => {
+                    if let Some(res) = res {
+                        self.handle_network_event(res)?;
+                    }
+                },
+                cmd = self.cmd_rx.recv() => {
+                    if let Some(cmd) = cmd {
+                        self.handle_driver_command(cmd)?;
+                    } else {
+                        info!("Driver command channel closed.");
+                        break;
+                    }
                 }
-                DriverCommand::GetNewBlocks => {
-                    self.reader_tx
-                        .send(ReaderCommand::GetNewBlocks)
-                        .map_err(|e| eyre!("reader rx channel closed: {}", e))?;
-                }
+            }
+        }
+        Ok(())
+    }
+
+    fn handle_network_event(&self, event: NetworkEvent) -> Result<()> {
+        match event {
+            NetworkEvent::NewListenAddr(addr) => {
+                info!("listening on {}", addr);
+            }
+            NetworkEvent::Message(msg) => {
+                debug!("received gossip message: {:?}", msg);
+                let block = SequencerBlock::from_bytes(&msg.data)?;
+                self.executor_tx
+                    .send(ExecutorCommand::BlockReceivedGossip {
+                        block: Box::new(block),
+                    })?;
+            }
+            _ => debug!("received network event: {:?}", event),
+        }
+
+        Ok(())
+    }
+
+    fn handle_driver_command(&mut self, cmd: DriverCommand) -> Result<()> {
+        // TODO: these are kind of janky, we might want to move to a polling-based architecture
+        if let Some(Ok(res)) = poll_fn(|cx| {
+            Pin::new(&mut self.reader_join_handle)
+                .as_mut()
+                .poll_unpin(cx)
+        })
+        .now_or_never()
+        {
+            self.alert_tx.send(Alert::DriverError(eyre!(
+                "Reader task exited unexpectedly."
+            )))?;
+            return res;
+        }
+
+        if let Some(Ok(res)) = poll_fn(|cx| {
+            Pin::new(&mut self.executor_join_handle)
+                .as_mut()
+                .poll_unpin(cx)
+        })
+        .now_or_never()
+        {
+            self.alert_tx.send(Alert::DriverError(eyre!(
+                "Executor task exited unexpectedly."
+            )))?;
+            return res;
+        }
+
+        match cmd {
+            DriverCommand::Shutdown => {
+                self.shutdown()?;
+            }
+            DriverCommand::GetNewBlocks => {
+                self.reader_tx
+                    .send(ReaderCommand::GetNewBlocks)
+                    .map_err(|e| eyre!("reader rx channel closed: {}", e))?;
             }
         }
 

@@ -5,5 +5,6 @@ pub mod driver;
 pub(crate) mod execution_client;
 pub(crate) mod executor;
 pub mod logger;
+pub mod network;
 pub(crate) mod reader;
 pub(crate) mod tendermint;
