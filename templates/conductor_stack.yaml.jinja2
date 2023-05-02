@@ -161,15 +161,15 @@ spec:
         - configMapRef:
             name: celestia-env
       ports:
-        - containerPort: 26659
+        - containerPort: {{ bridge_host_port }}
           hostPort: {{ bridge_host_port }}
     - name: metro-sequencer
       command: ["/scripts/start-metro-podman.sh"]
       image: "ghcr.io/astriaorg/metro:0.0.3"
       ports:
-        - containerPort: 1318
+        - containerPort: {{ sequencer_host_port }}
           hostPort: {{ sequencer_host_port }}
-        - containerPort: 9100
+        - containerPort: {{ sequencer_host_grpc_port }}
           hostPort: {{ sequencer_host_grpc_port }}
       volumeMounts:
         - mountPath: /scripts/
@@ -214,9 +214,9 @@ spec:
         - name: executor_host_grpc_port
           value: {{ executor_host_grpc_port }}
       ports:
-        - containerPort: 8545
+        - containerPort: {{ executor_host_http_port }}
           hostPort: {{ executor_host_http_port }}
-        - containerPort: 50051
+        - containerPort: {{ executor_host_grpc_port }}
           hostPort: {{ executor_host_grpc_port }}
   hostname: test_sequencer_relayer
   restartPolicy: OnFailure
