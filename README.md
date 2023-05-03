@@ -24,18 +24,19 @@ podman run --rm \
   -e metro_home_volume=metro-home-vol \
   -e executor_home_volume=executor-home-vol \
   -e relayer_home_volume=relayer-home-vol \
-  -e geth_local_account=0xb0E31D878F49Ec0403A25944d6B1aE1bf05D17E1 \
+  -e executor_local_account=0xb0E31D878F49Ec0403A25944d6B1aE1bf05D17E1 \
+  -e celestia_node_host_port=26657 \
   -e bridge_host_port=26659 \
   -e sequencer_host_port=1318 \
   -e sequencer_host_grpc_port=9100 \
   -e executor_host_http_port=8545 \
   -e executor_host_grpc_port=50051 \
-  -e scripts_host_volume="$PWD"/containers \
+  -e scripts_host_volume="$PWD"/container-scripts \
   -v "$PWD"/templates:/data/templates \
-  bbcrd/j2cli:latest \
-  -o templates/conductor_stack.yaml \
-  templates/conductor_stack.yaml.jinja2
-  
+  dcagatay/j2cli:latest \
+  -o /data/templates/conductor_stack.yaml \
+  /data/templates/conductor_stack.yaml.jinja2
+
 # play the pod with `kube play` which creates containers, pods, and volumes
 podman kube play --log-level=debug templates/conductor_stack.yaml
 
@@ -44,6 +45,7 @@ cargo run
 
 # run tests
 cargo test
+
 ```
 
 ### Tests (with Docker):

@@ -76,6 +76,8 @@ spec:
         - mountPath: /home/celestia
           name: {{ celestia_home_volume }}
       env:
+        - name: bridge_host_port
+          value: {{ bridge_host_port }}
         - name: home_dir
           valueFrom:
             configMapKeyRef:
@@ -143,11 +145,17 @@ spec:
       envFrom:
         - configMapRef:
             name: celestia-env
+      env:
+        - name: celestia_node_host_port
+          value: {{ celestia_node_host_port }}
       volumeMounts:
         - mountPath: /scripts/
           name: scripts-volume
         - mountPath: /home/celestia
           name: {{ celestia_home_volume }}
+      ports:
+        - containerPort: {{ celestia_node_host_port }}
+          hostPort: {{ celestia_node_host_port }}
     - name: celestia-bridge
       command:
       - /scripts/start-bridge-podman.sh
