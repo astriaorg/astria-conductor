@@ -44,12 +44,12 @@ struct SequencerRelayerStack<'a> {
     scripts_host_volume: &'a str,
     executor_home_volume: &'a str,
     relayer_home_volume: &'a str,
+    executor_local_account: &'a str,
     bridge_host_port: u16,
     sequencer_host_port: u16,
     sequencer_host_grpc_port: u16,
     executor_host_http_port: u16,
     executor_host_grpc_port: u16,
-    // TODO - add relayer_host_port?
 }
 
 pub fn init_environment() -> Podman {
@@ -96,6 +96,10 @@ impl StackInfo {
     pub fn make_executor_endpoint(&self) -> String {
         format!("http://127.0.0.0:{}", self.executor_host_http_port,)
     }
+
+    pub fn make_executor_grpc_endpoint(&self) -> String {
+        format!("http://127.0.0.0:{}", self.executor_host_grpc_port, )
+    }
 }
 
 impl Drop for StackInfo {
@@ -122,7 +126,10 @@ pub async fn init_stack(podman: &Podman) -> StackInfo {
     let executor_host_http_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
     let executor_host_grpc_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
 
-    let scripts_host_volume = format!("{}/containers/", env!("CARGO_MANIFEST_DIR"));
+    // steezeburger's local account used for astria development
+    let executor_local_account = "0xb0E31D878F49Ec0403A25944d6B1aE1bf05D17E1";
+
+    let scripts_host_volume = format!("{}/container-scripts/", env!("CARGO_MANIFEST_DIR"));
 
     let stack = SequencerRelayerStack {
         pod_name: &pod_name,
@@ -131,6 +138,7 @@ pub async fn init_stack(podman: &Podman) -> StackInfo {
         scripts_host_volume: &scripts_host_volume,
         executor_home_volume: &geth_home_volume,
         relayer_home_volume: &relayer_home_volume,
+        executor_local_account: &executor_local_account,
         bridge_host_port,
         sequencer_host_port,
         sequencer_host_grpc_port,
