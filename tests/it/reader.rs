@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use sequencer_relayer::sequencer::SequencerClient;
 use tokio::sync::mpsc;
 
 use astria_conductor::reader::Reader;
@@ -38,5 +37,5 @@ async fn should_get_new_block() {
         tokio::time::sleep(Duration::from_secs(1)).await;
     }
 
-    assert!(blocks.len() > 0);
+    assert!(!blocks.is_empty());
 }
