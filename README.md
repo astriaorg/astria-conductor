@@ -25,7 +25,7 @@ podman run --rm \
   -e executor_home_volume=executor-home-vol \
   -e relayer_home_volume=relayer-home-vol \
   -e executor_local_account=0xb0E31D878F49Ec0403A25944d6B1aE1bf05D17E1 \
-  -e celestia_node_host_port=26657 \
+  -e celestia_app_host_port=26657 \
   -e bridge_host_port=26659 \
   -e sequencer_host_port=1318 \
   -e sequencer_host_grpc_port=9100 \
