@@ -54,6 +54,7 @@ pub(crate) enum ExecutorCommand {
     },
     /// used when a block is received from the reader (Celestia)
     /// TODO: rename
+    #[cfg(features = "reader")]
     BlockReceived {
         block: Box<SequencerBlock>,
     },
@@ -108,11 +109,12 @@ impl Executor {
                         "ExecutorCommand::BlockReceivedGossip height={}",
                         block.header.height
                     );
-                    self.alert_tx.send(Alert::BlockReceived {
+                    self.alert_tx.send(Alert::BlockReceivedGossip {
                         block_height: block.header.height.parse::<u64>()?,
                     })?;
                     self.execute_block(*block).await?;
                 }
+                #[cfg(features = "reader")]
                 ExecutorCommand::BlockReceived { block } => {
                     // TODO: don't execute here, just mark as final?
                     log::info!(

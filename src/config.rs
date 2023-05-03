@@ -14,4 +14,7 @@ pub struct Config {
 
     /// Address of the RPC server for execution
     pub execution_rpc_url: String,
+
+    /// Bootnodes for the P2P network
+    pub bootnodes: Vec<String>,
 }

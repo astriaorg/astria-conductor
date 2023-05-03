@@ -6,5 +6,7 @@ pub(crate) mod execution_client;
 pub(crate) mod executor;
 pub mod logger;
 pub mod network;
+#[cfg(features = "reader")]
 pub(crate) mod reader;
+#[cfg(features = "reader")]
 pub(crate) mod tendermint;

@@ -14,6 +14,9 @@ rpc_address = "https://0.0.0.0:50051"
 
 * run `cargo run`
 
+* alternatively, you can do `cargo build && ./target/debug/conductor`.
+
+* to connect directly to a node via p2p, you can use the `--bootnodes` flag, eg. `--bootnodes=/ip4/127.0.0.1/tcp/33900` or `--bootnodes=/ip4/127.0.0.1/tcp/34471/p2p/12D3KooWDCHwgGetpJuHknJqv2dNbYpe3LqgH8BKrsYHV9ALpAj8`.
 
 ### Tests (with Docker):
 * Optional: Make a new account in Metamask (or whichever method you prefer). Copy/paste the address into `tests/docker/.env` as `ACCOUNT_ID`. Otherwise, the default account id will be used.
