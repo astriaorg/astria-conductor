@@ -45,6 +45,7 @@ struct SequencerRelayerStack<'a> {
     executor_home_volume: &'a str,
     relayer_home_volume: &'a str,
     executor_local_account: &'a str,
+    celestia_app_host_port: u16,
     bridge_host_port: u16,
     sequencer_host_port: u16,
     sequencer_host_grpc_port: u16,
@@ -72,6 +73,7 @@ pub fn init_environment() -> Podman {
 
 pub struct StackInfo {
     pub pod_name: String,
+    pub celestia_app_host_port: u16,
     pub bridge_host_port: u16,
     pub sequencer_host_port: u16,
     pub sequencer_host_grpc_port: u16,
@@ -121,6 +123,7 @@ pub async fn init_stack(podman: &Podman) -> StackInfo {
     let geth_home_volume = format!("geth-home-volume-{id}");
     let relayer_home_volume = format!("relayer-home-volume-{id}");
     let bridge_host_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
+    let celestia_app_host_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
     let sequencer_host_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
     let sequencer_host_grpc_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
     let executor_host_http_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
@@ -139,6 +142,7 @@ pub async fn init_stack(podman: &Podman) -> StackInfo {
         executor_home_volume: &geth_home_volume,
         relayer_home_volume: &relayer_home_volume,
         executor_local_account: &executor_local_account,
+        celestia_app_host_port,
         bridge_host_port,
         sequencer_host_port,
         sequencer_host_grpc_port,
@@ -150,6 +154,7 @@ pub async fn init_stack(podman: &Podman) -> StackInfo {
 
     let stack_info = StackInfo {
         pod_name,
+        celestia_app_host_port,
         bridge_host_port,
         sequencer_host_port,
         sequencer_host_grpc_port,
