@@ -100,7 +100,7 @@ impl StackInfo {
     }
 
     pub fn make_executor_grpc_endpoint(&self) -> String {
-        format!("http://127.0.0.0:{}", self.executor_host_grpc_port, )
+        format!("http://127.0.0.0:{}", self.executor_host_grpc_port,)
     }
 }
 

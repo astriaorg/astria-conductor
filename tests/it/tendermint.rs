@@ -1,6 +1,6 @@
-use std::time::Duration;
-use astria_conductor::tendermint::TendermintClient;
 use crate::helper::{init_environment, init_stack, wait_until_ready};
+use astria_conductor::tendermint::TendermintClient;
+use std::time::Duration;
 
 #[tokio::test]
 async fn should_get_validator_set() {
