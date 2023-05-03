@@ -1,6 +1,6 @@
 name: Tests
 
-on: [pull_request]
+on: [ pull_request ]
 
 jobs:
   test:
@@ -97,6 +97,12 @@ jobs:
     name: clippy
     runs-on: ubuntu-latest
     steps:
+      # needed to build astria-rpc
+      - uses: bufbuild/buf-setup-action@v1
+        with:
+          version: "1.15.1"
+          github_token: ${{ github.token }}
+      # needed to build sequencer-relayer
       - name: Install protoc
         run: sudo apt-get install protobuf-compiler
       - uses: actions/checkout@v2
