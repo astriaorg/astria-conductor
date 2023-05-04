@@ -9,6 +9,15 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# install go
+# FIXME - is there a better way to do this? buf doesn't have a package in apt. npm isn't better
+# TODO - try binary from github https://buf.build/docs/installation#binary
+RUN wget -q -O - https://dl.google.com/go/go1.19.linux-arm64.tar.gz | tar -C /usr/local -xzf -
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+# install buf cli
+RUN GO111MODULE=on GOBIN=/usr/local/bin go install github.com/bufbuild/buf/cmd/buf@v1.17.0
+
 # install zig
 RUN curl -L "https://ziglang.org/download/0.10.1/zig-linux-$(uname -m)-0.10.1.tar.xz" | tar -J -x -C /usr/local && \
     ln -s "/usr/local/zig-linux-$(uname -m)-0.10.1/zig" /usr/local/bin/zig
