@@ -9,6 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay-rust-toolchain@1.69.0
+      - uses: Swatinem/rust-cache@v2
       - name: Install protoc
         uses: arduino/setup-protoc@v1
         with:
@@ -71,6 +72,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: dtolnay-rust-toolchain@1.69.0
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
       - name: Install protoc
         uses: arduino/setup-protoc@v1
         with:
@@ -79,8 +84,5 @@ jobs:
         with:
           version: "1.17.0"
           github_token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: dtolnay-rust-toolchain@1.69.0
-        with:
-          components: clippy
       - name: run clippy
         run: clippy --all --all-targets -- -D warnings
