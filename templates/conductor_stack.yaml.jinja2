@@ -213,17 +213,6 @@ spec:
         - mountPath: /root/.metro
           name: {{ metro_home_volume }}
           readOnly: true
-    - name: conductor
-      image: "ghcr.io/astriaorg/conductor:debug-local"
-      command: ["/usr/local/bin/conductor"]
-      args:
-        - "--tendermint-url=http://localhost:{{ sequencer_host_port }}"
-        - "--celestia-node-url=http://localhost:{{ bridge_host_port }}"
-        - "--chain-id=ethereum"
-        - "--execution-rpc-url=http://localhost:{{ executor_host_grpc_port }}"
-      volumeMounts:
-        - mountPath: /home/conductor
-          name: {{ conductor_home_volume }}
     - name: geth-executor
       command: ["/scripts/start-geth-podman.sh"]
       image: "ghcr.io/astriaorg/go-ethereum:0.0.3"
