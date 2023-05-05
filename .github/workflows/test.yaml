@@ -61,16 +61,16 @@ jobs:
   #     - name: Run tests
   #       run: cargo test --release
 
-  # fmt:
-  #   name: fmt
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: dtolnay-rust-toolchain@nightly
-  #       with:
-  #         components: rustfmt
-  #     - name: run rustfmt
-  #       run: cargo +nightly fmt all -- --check
+  fmt:
+    name: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay-rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - name: run rustfmt
+        run: cargo +nightly fmt all -- --check
 
   # clippy:
   #   name: clippy
