@@ -51,6 +51,7 @@ RUN cargo zigbuild --release \
 RUN mkdir -p target/release \
     && cp target/$(cat ./target_triple)/release/conductor target/release/
 
+# TODO - remove debug tag once this is stable
 FROM gcr.io/distroless/cc:debug
 WORKDIR /app/
 EXPOSE 2450

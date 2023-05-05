@@ -44,7 +44,6 @@ struct SequencerRelayerStack<'a> {
     scripts_host_volume: &'a str,
     executor_home_volume: &'a str,
     relayer_home_volume: &'a str,
-    conductor_home_volume: &'a str,
     executor_local_account: &'a str,
     celestia_app_host_port: u16,
     bridge_host_port: u16,
@@ -123,7 +122,6 @@ pub async fn init_stack(podman: &Podman) -> StackInfo {
     let metro_home_volume = format!("metro-home-volume-{id}");
     let geth_home_volume = format!("geth-home-volume-{id}");
     let relayer_home_volume = format!("relayer-home-volume-{id}");
-    let conductor_home_volume = format!("conductor-home-volume-{id}");
     let bridge_host_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
     let celestia_app_host_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
     let sequencer_host_port = HOST_PORT.fetch_add(1, Ordering::Relaxed);
@@ -140,7 +138,6 @@ pub async fn init_stack(podman: &Podman) -> StackInfo {
         scripts_host_volume: &scripts_host_volume,
         executor_home_volume: &geth_home_volume,
         relayer_home_volume: &relayer_home_volume,
-        conductor_home_volume: &conductor_home_volume,
         // steezeburger's local account used for astria development
         executor_local_account: "0xb0E31D878F49Ec0403A25944d6B1aE1bf05D17E1",
         celestia_app_host_port,

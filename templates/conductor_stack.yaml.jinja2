@@ -48,14 +48,6 @@ data:
   home_dir: "/home/relayer"
 ---
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: conductor-env
-  namespace: default
-data:
-  home_dir: "/home/conductor"
----
-apiVersion: v1
 kind: Pod
 metadata:
   creationTimestamp: "2023-04-25T15:20:49Z"
@@ -256,7 +248,5 @@ spec:
     name: {{ executor_home_volume }}
   - emptyDir: {}
     name: {{ relayer_home_volume }}
-  - emptyDir: {}
-    name: {{ conductor_home_volume }}
 
 status: {}
