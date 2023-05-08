@@ -17,9 +17,8 @@ gossipnet = { git = "https://github.com/astriaorg/gossipnet", features = [ "mdns
 log = "0.4.17"
 prost-types = "0.11.8"
 reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
-#sequencer-relayer = { git = "https://github.com/astriaorg/sequencer-relayer", rev = "9192c28022fb44da594f83821393881f2a9fbfa9" }
-sequencer-relayer = { path = "../sequencer-relayer/sequencer-relayer" }
-sequencer-relayer-proto = { path = "../sequencer-relayer/sequencer-relayer-proto" }
+sequencer-relayer = { git = "https://github.com/astriaorg/sequencer-relayer", rev = "b79f95800ae0e3c3b3faa3bcc7a138ec5eb3f48d" }
+sequencer-relayer-proto = { git = "https://github.com/astriaorg/sequencer-relayer", rev = "b79f95800ae0e3c3b3faa3bcc7a138ec5eb3f48d" }
 serde = "1.0.152"
 serde_json = "1.0"
 thiserror = "1.0.38"
