@@ -4,16 +4,14 @@ use log::{
     warn,
 };
 use prost_types::Timestamp;
-use sequencer_relayer::{
-    proto::SequencerMsg,
-    sequencer_block::{
-        cosmos_tx_body_to_sequencer_msgs,
-        get_namespace,
-        parse_cosmos_tx,
-        Namespace,
-        SequencerBlock,
-    },
+use sequencer_relayer::sequencer_block::{
+    cosmos_tx_body_to_sequencer_msgs,
+    get_namespace,
+    parse_cosmos_tx,
+    Namespace,
+    SequencerBlock,
 };
+use sequencer_relayer_proto::SequencerMsg;
 use tendermint::Time;
 use tokio::{
     sync::mpsc::{
@@ -125,7 +123,9 @@ impl Executor {
 
         while let Some(cmd) = self.cmd_rx.recv().await {
             match cmd {
-                ExecutorCommand::BlockReceivedGossip { block } => {
+                ExecutorCommand::BlockReceivedGossip {
+                    block,
+                } => {
                     log::info!(
                         "ExecutorCommand::BlockReceivedGossip height={}",
                         block.header.height
@@ -136,7 +136,9 @@ impl Executor {
                     self.execute_block(*block).await?;
                 }
                 #[cfg(features = "reader")]
-                ExecutorCommand::BlockReceived { block } => {
+                ExecutorCommand::BlockReceived {
+                    block,
+                } => {
                     // TODO: don't execute here, just mark as final?
                     log::info!(
                         "ExecutorCommand::BlockReceived height={}",

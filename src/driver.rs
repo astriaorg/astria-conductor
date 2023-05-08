@@ -10,17 +10,33 @@ use color_eyre::eyre::{
     eyre,
     Result,
 };
-use futures::future::{
-    poll_fn,
-    FutureExt,
+use futures::{
+    future::{
+        poll_fn,
+        FutureExt,
+    },
+    StreamExt,
 };
-use log::info;
-use tokio::sync::mpsc::{
-    self,
-    UnboundedReceiver,
-    UnboundedSender,
+use log::{
+    debug,
+    info,
+    warn,
+};
+use sequencer_relayer::sequencer_block::SequencerBlock;
+use tokio::{
+    select,
+    sync::mpsc::{
+        self,
+        UnboundedReceiver,
+        UnboundedSender,
+    },
 };
 
+#[cfg(features = "reader")]
+use crate::reader::{
+    self,
+    ReaderCommand,
+};
 use crate::{
     alert::{
         Alert,
@@ -29,12 +45,11 @@ use crate::{
     config::Config,
     executor,
     executor::ExecutorCommand,
-    reader,
-    reader::ReaderCommand,
+    network::{
+        Event as NetworkEvent,
+        GossipNetwork,
+    },
 };
-
-#[cfg(features = "reader")]
-use crate::reader::{self, ReaderCommand};
 
 /// The channel through which the user can send commands to the driver.
 pub(crate) type Sender = UnboundedSender<DriverCommand>;

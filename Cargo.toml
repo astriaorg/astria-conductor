@@ -3,8 +3,6 @@ name = "astria-conductor"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 astria-execution-apis-rpc = { git = "https://github.com/astriaorg/astria-rpc", rev = "b67d6e1a7e61d2143ad395f9c1c3fa1f515a45ce" }
 bech32 = "0.9"
@@ -19,7 +17,9 @@ gossipnet = { git = "https://github.com/astriaorg/gossipnet", features = [ "mdns
 log = "0.4.17"
 prost-types = "0.11.8"
 reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
-sequencer-relayer = { git = "https://github.com/astriaorg/sequencer-relayer", rev = "94a72fbe1c36aeaef88c989b926d02164b9d3135" }
+#sequencer-relayer = { git = "https://github.com/astriaorg/sequencer-relayer", rev = "9192c28022fb44da594f83821393881f2a9fbfa9" }
+sequencer-relayer = { path = "../sequencer-relayer/sequencer-relayer" }
+sequencer-relayer-proto = { path = "../sequencer-relayer/sequencer-relayer-proto" }
 serde = "1.0.152"
 serde_json = "1.0"
 thiserror = "1.0.38"
@@ -47,4 +47,5 @@ users = "0.11.0"
 home = "0.5.4"
 
 [features]
+default = [ "reader" ]
 reader = []

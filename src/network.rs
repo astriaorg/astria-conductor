@@ -1,7 +1,10 @@
 use color_eyre::eyre::Result;
-use gossipnet::network::{Network, NetworkBuilder, Sha256Topic};
-
 pub(crate) use gossipnet::network::Event;
+use gossipnet::network::{
+    Network,
+    NetworkBuilder,
+    Sha256Topic,
+};
 
 const BLOCKS_TOPIC: &str = "blocks";
 
