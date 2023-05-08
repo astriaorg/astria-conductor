@@ -66,14 +66,14 @@ fn time_conversion(value: &str) -> Option<Timestamp> {
 }
 
 #[derive(Debug)]
-pub(crate) enum ExecutorCommand {
+pub enum ExecutorCommand {
     /// used when a block is received from the gossip network
     BlockReceivedGossip {
         block: Box<SequencerBlock>,
     },
     /// used when a block is received from the reader (Celestia)
     /// TODO: rename
-    #[cfg(features = "reader")]
+    #[cfg(feature = "reader")]
     BlockReceived {
         block: Box<SequencerBlock>,
     },
@@ -135,7 +135,7 @@ impl Executor {
                     })?;
                     self.execute_block(*block).await?;
                 }
-                #[cfg(features = "reader")]
+                #[cfg(feature = "reader")]
                 ExecutorCommand::BlockReceived {
                     block,
                 } => {

@@ -20,7 +20,6 @@ use futures::{
 use log::{
     debug,
     info,
-    warn,
 };
 use sequencer_relayer::sequencer_block::SequencerBlock;
 use tokio::{
@@ -32,7 +31,7 @@ use tokio::{
     },
 };
 
-#[cfg(features = "reader")]
+#[cfg(feature = "reader")]
 use crate::reader::{
     self,
     ReaderCommand,
@@ -72,9 +71,9 @@ pub struct Driver {
     cmd_rx: Receiver,
 
     /// The channel used to send messages to the reader task.
-    #[cfg(features = "reader")]
+    #[cfg(feature = "reader")]
     reader_tx: reader::Sender,
-    #[cfg(features = "reader")]
+    #[cfg(feature = "reader")]
     reader_join_handle: reader::JoinHandle,
 
     /// The channel used to send messages to the executor task.
@@ -92,15 +91,15 @@ impl Driver {
     pub async fn new(conf: Config, alert_tx: AlertSender) -> Result<Self> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let (executor_join_handle, executor_tx) = executor::spawn(&conf, alert_tx.clone()).await?;
-        #[cfg(features = "reader")]
+        #[cfg(feature = "reader")]
         let (reader_join_handle, reader_tx) = reader::spawn(&conf, executor_tx.clone()).await?;
 
         Ok(Self {
             cmd_tx: cmd_tx.clone(),
             cmd_rx,
-            #[cfg(features = "reader")]
+            #[cfg(feature = "reader")]
             reader_tx,
-            #[cfg(features = "reader")]
+            #[cfg(feature = "reader")]
             reader_join_handle,
             executor_tx,
             executor_join_handle,
@@ -155,7 +154,7 @@ impl Driver {
     fn handle_driver_command(&mut self, cmd: DriverCommand) -> Result<()> {
         // TODO: these are kind of janky, we might want to move to a polling-based architecture
 
-        #[cfg(features = "reader")]
+        #[cfg(feature = "reader")]
         if let Some(Ok(res)) = poll_fn(|cx| {
             Pin::new(&mut self.reader_join_handle)
                 .as_mut()
@@ -186,15 +185,11 @@ impl Driver {
             DriverCommand::Shutdown => {
                 self.shutdown()?;
             }
-            #[cfg(features = "reader")]
+            #[cfg(feature = "reader")]
             DriverCommand::GetNewBlocks => {
                 self.reader_tx
                     .send(ReaderCommand::GetNewBlocks)
                     .map_err(|e| eyre!("reader rx channel closed: {}", e))?;
-            }
-            #[cfg(not(features = "reader"))]
-            _ => {
-                warn!("command {:?} not supported", cmd);
             }
         }
 
@@ -210,7 +205,7 @@ impl Driver {
         *is_shutdown = true;
 
         info!("Shutting down driver.");
-        #[cfg(features = "reader")]
+        #[cfg(feature = "reader")]
         self.reader_tx.send(ReaderCommand::Shutdown)?;
         self.executor_tx.send(ExecutorCommand::Shutdown)?;
         Ok(())

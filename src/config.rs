@@ -22,6 +22,9 @@ pub struct Config {
     #[serde(default = "default_execution_rpc_url")]
     pub execution_rpc_url: String,
 
+    /// Disable the reader.
+    pub disable_reader: bool,
+
     /// Bootnodes for the P2P network
     pub bootnodes: Vec<String>,
 }
