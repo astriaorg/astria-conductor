@@ -18,9 +18,8 @@ hex = "0.4"
 gossipnet = { git = "https://github.com/astriaorg/gossipnet", features = [ "mdns" ], rev = "e916e4b0d4a0caa6fea68f721d4a4a8660a46af6" }
 log = "0.4.17"
 prost-types = "0.11.8"
-reqwest = { version = "0.11", features = ["json"] }
-rs-cnc = { git = "https://github.com/astriaorg/rs-cnc", rev = "2ebf140778db12835eba686f6c5111eb429218e1" }
-sequencer-relayer = { git = "https://github.com/astriaorg/sequencer-relayer", rev = "4af6b8c6666f66bb08a70fcd280c64c3e9c7dd4c" }
+reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
+sequencer-relayer = { git = "https://github.com/astriaorg/sequencer-relayer", rev = "94a72fbe1c36aeaef88c989b926d02164b9d3135" }
 serde = "1.0.152"
 serde_json = "1.0"
 thiserror = "1.0.38"
@@ -29,6 +28,11 @@ tokio = { version = "1.25.0", features = ["macros", "rt-multi-thread", "signal"]
 tonic = "0.8.3"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.16"
+
+[dependencies.rs-cnc]
+git = "https://github.com/astriaorg/rs-cnc.git"
+default-features = false
+features = ["rustls"]
 
 [dev-dependencies]
 askama = "0.12.0"
