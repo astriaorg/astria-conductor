@@ -7,16 +7,14 @@ use log::{
     warn,
 };
 use prost_types::Timestamp as ProstTimestamp;
-use sequencer_relayer::{
-    proto::SequencerMsg,
-    sequencer_block::{
-        cosmos_tx_body_to_sequencer_msgs,
-        get_namespace,
-        parse_cosmos_tx,
-        Namespace,
-        SequencerBlock,
-    },
+use sequencer_relayer::sequencer_block::{
+    cosmos_tx_body_to_sequencer_msgs,
+    get_namespace,
+    parse_cosmos_tx,
+    Namespace,
+    SequencerBlock,
 };
+use sequencer_relayer_proto::SequencerMsg;
 use tendermint::Time;
 use tokio::{
     sync::mpsc::{
