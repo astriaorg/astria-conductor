@@ -56,10 +56,8 @@ async fn run() -> Result<()> {
         .merge(Serialized::defaults(args))
         .extract()?;
 
-    log::info!("Using chain ID {}", conf.chain_id);
     log::info!("Using Celestia node at {}", conf.celestia_node_url);
     log::info!("Using execution node at {}", conf.execution_rpc_url);
-    log::info!("Using Tendermint node at {}", conf.tendermint_url);
 
     let SignalReceiver {
         mut reload_rx,
@@ -109,7 +107,7 @@ async fn run() -> Result<()> {
                     Alert::BlockReceivedGossip{block_height} => {
                         info!("block received from p2p network; height: {}", block_height);
                     }
-                    Alert::BlockReceived{block_height} => {
+                    Alert::BlockReceivedFromDA{block_height} => {
                         info!("block received from DA layer; DA layer height: {}", block_height);
                     }
                 }

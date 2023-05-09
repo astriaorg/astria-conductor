@@ -20,7 +20,7 @@ pub enum Alert {
     },
 
     /// Send when a block has been received from the data layer.
-    BlockReceived {
+    BlockReceivedFromDA {
         /// The height of the block received
         block_height: u64,
     },

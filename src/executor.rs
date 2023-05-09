@@ -151,7 +151,7 @@ impl Executor {
                         "ExecutorCommand::BlockReceived height={}",
                         block.header.height
                     );
-                    self.alert_tx.send(Alert::BlockReceived {
+                    self.alert_tx.send(Alert::BlockReceivedFromDA {
                         block_height: block.header.height.parse::<u64>()?,
                     })?;
 
