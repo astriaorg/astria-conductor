@@ -251,7 +251,7 @@ impl Reader {
     /// Processes an individual block
     async fn process_block(&self, block: SequencerBlock) -> Result<()> {
         self.executor_tx
-            .send(executor::ExecutorCommand::BlockReceived {
+            .send(executor::ExecutorCommand::BlockReceivedFromDA {
                 block: Box::new(block),
             })?;
 

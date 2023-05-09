@@ -1,15 +1,20 @@
+use std::collections::HashMap;
+
 use color_eyre::eyre::Result;
 use log::{
     info,
     warn,
 };
 use prost_types::Timestamp;
-use sequencer_relayer::sequencer_block::{
-    cosmos_tx_body_to_sequencer_msgs,
-    get_namespace,
-    parse_cosmos_tx,
-    Namespace,
-    SequencerBlock,
+use sequencer_relayer::{
+    base64_string::Base64String,
+    sequencer_block::{
+        cosmos_tx_body_to_sequencer_msgs,
+        get_namespace,
+        parse_cosmos_tx,
+        Namespace,
+        SequencerBlock,
+    },
 };
 use sequencer_relayer_proto::SequencerMsg;
 use tendermint::Time;
@@ -72,9 +77,8 @@ pub enum ExecutorCommand {
         block: Box<SequencerBlock>,
     },
     /// used when a block is received from the reader (Celestia)
-    /// TODO: rename
     #[cfg(feature = "reader")]
-    BlockReceived {
+    BlockReceivedFromDA {
         block: Box<SequencerBlock>,
     },
     Shutdown,
@@ -93,6 +97,9 @@ struct Executor {
     alert_tx: AlertSender,
     /// Tracks the state of the execution chain
     execution_state: Vec<u8>,
+
+    /// Map of sequencer block hash to execution block hash
+    sequencer_hash_to_execution_hash: HashMap<Base64String, Vec<u8>>,
 }
 
 impl Executor {
@@ -113,6 +120,7 @@ impl Executor {
                 namespace,
                 alert_tx,
                 execution_state,
+                sequencer_hash_to_execution_hash: HashMap::new(),
             },
             cmd_tx,
         ))
@@ -136,10 +144,9 @@ impl Executor {
                     self.execute_block(*block).await?;
                 }
                 #[cfg(feature = "reader")]
-                ExecutorCommand::BlockReceived {
+                ExecutorCommand::BlockReceivedFromDA {
                     block,
                 } => {
-                    // TODO: don't execute here, just mark as final?
                     log::info!(
                         "ExecutorCommand::BlockReceived height={}",
                         block.header.height
@@ -147,7 +154,21 @@ impl Executor {
                     self.alert_tx.send(Alert::BlockReceived {
                         block_height: block.header.height.parse::<u64>()?,
                     })?;
-                    // self.execute_block(*block).await?;
+
+                    match self.sequencer_hash_to_execution_hash.get(&block.block_hash) {
+                        Some(execution_block_hash) => {
+                            self.execution_rpc_client
+                                .call_finalize_block(execution_block_hash.clone())
+                                .await?;
+                        }
+                        None => {
+                            log::error!(
+                                "ExecutorCommand::BlockReceived: no execution block hash found \
+                                 for sequencer block hash {}",
+                                &block.block_hash,
+                            );
+                        }
+                    }
                 }
                 ExecutorCommand::Shutdown => {
                     log::info!("Shutting down executor event loop.");
@@ -202,7 +223,11 @@ impl Executor {
             .execution_rpc_client
             .call_do_block(prev_block_hash, txs, timestamp)
             .await?;
-        self.execution_state = response.block_hash;
+        self.execution_state = response.block_hash.clone();
+
+        // store block hash returned by execution client, as we need it to finalize the block later
+        self.sequencer_hash_to_execution_hash
+            .insert(block.block_hash, response.block_hash);
 
         Ok(())
     }

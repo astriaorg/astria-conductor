@@ -27,11 +27,6 @@ pub struct Cli {
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub bootnodes: Option<Vec<String>>,
 
-    /// Disable the reader.
-    #[arg(long = "disable-reader")]
-    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
-    pub disable_reader: Option<bool>,
-
     /// Log level. One of debug, info, warn, or error
     #[arg(long = "log", default_value = "info")]
     pub log_level: String,

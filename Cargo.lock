@@ -354,11 +354,12 @@ dependencies = [
 [[package]]
 name = "astria-execution-apis-rpc"
 version = "0.1.0"
-source = "git+https://github.com/astriaorg/astria-rpc?rev=b67d6e1a7e61d2143ad395f9c1c3fa1f515a45ce#b67d6e1a7e61d2143ad395f9c1c3fa1f515a45ce"
+source = "git+https://github.com/astriaorg/astria-rpc?rev=75bfb3d#75bfb3d77e38668d4adfb1729d1c7bb662e7c980"
 dependencies = [
  "prost",
  "prost-types",
  "tonic",
+ "which",
 ]
 
 [[package]]
