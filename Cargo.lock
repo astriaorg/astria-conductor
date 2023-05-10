@@ -333,7 +333,7 @@ dependencies = [
  "log",
  "prost-types",
  "reqwest",
- "rs-cnc",
+ "rs-cnc 0.1.0 (git+https://github.com/astriaorg/rs-cnc.git)",
  "sequencer-relayer",
  "sequencer-relayer-proto",
  "serde",
@@ -1102,18 +1102,8 @@ version = "0.14.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b750cb3417fd1b327431a470f388520309479ab0bf5e323505daf0290cd3850"
 dependencies = [
- "darling_core 0.14.4",
- "darling_macro 0.14.4",
-]
-
-[[package]]
-name = "darling"
-version = "0.20.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0558d22a7b463ed0241e993f76f09f30b126687447751a8638587b864e4b3944"
-dependencies = [
- "darling_core 0.20.1",
- "darling_macro 0.20.1",
+ "darling_core",
+ "darling_macro",
 ]
 
 [[package]]
@@ -1131,39 +1121,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "darling_core"
-version = "0.20.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab8bfa2e259f8ee1ce5e97824a3c55ec4404a0d772ca7fa96bf19f0752a046eb"
-dependencies = [
- "fnv",
- "ident_case",
- "proc-macro2",
- "quote",
- "strsim",
- "syn 2.0.15",
-]
-
-[[package]]
 name = "darling_macro"
 version = "0.14.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4aab4dbc9f7611d8b55048a3a16d2d010c2c8334e46304b40ac1cc14bf3b48e"
 dependencies = [
- "darling_core 0.14.4",
+ "darling_core",
  "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "darling_macro"
-version = "0.20.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29a358ff9f12ec09c3e61fef9b5a9902623a695a46a917b07f269bff1445611a"
-dependencies = [
- "darling_core 0.20.1",
- "quote",
- "syn 2.0.15",
 ]
 
 [[package]]
@@ -1246,7 +1211,7 @@ version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f91d4cfa921f1c05904dc3c57b4a32c38aed3340cce209f3a6fd1478babafc4"
 dependencies = [
- "darling 0.14.4",
+ "darling",
  "proc-macro2",
  "quote",
  "syn 1.0.109",
@@ -2097,7 +2062,6 @@ checksum = "bd070e393353796e801d209ad339e89596eb4c8d430d18ede6a1cced8fafbd99"
 dependencies = [
  "autocfg",
  "hashbrown",
- "serde",
 ]
 
 [[package]]
@@ -3769,6 +3733,21 @@ dependencies = [
 [[package]]
 name = "rs-cnc"
 version = "0.1.0"
+source = "git+https://github.com/astriaorg/rs-cnc.git?rev=07d00be#07d00be1414c90064fe156da454415a9dc3d1c84"
+dependencies = [
+ "base64 0.21.0",
+ "bytes 1.4.0",
+ "eyre",
+ "hex",
+ "rand 0.8.5",
+ "reqwest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rs-cnc"
+version = "0.1.0"
 source = "git+https://github.com/astriaorg/rs-cnc.git#07d00be1414c90064fe156da454415a9dc3d1c84"
 dependencies = [
  "base64 0.21.0",
@@ -3989,7 +3968,7 @@ checksum = "bebd363326d05ec3e2f532ab7660680f3b02130d780c299bca73469d521bc0ed"
 [[package]]
 name = "sequencer-relayer"
 version = "0.1.0"
-source = "git+https://github.com/astriaorg/sequencer-relayer?rev=b79f95800ae0e3c3b3faa3bcc7a138ec5eb3f48d#b79f95800ae0e3c3b3faa3bcc7a138ec5eb3f48d"
+source = "git+https://github.com/astriaorg/sequencer-relayer?rev=8cd9b9e4268368c48ab3be02d9fa85b46914a32e#8cd9b9e4268368c48ab3be02d9fa85b46914a32e"
 dependencies = [
  "axum",
  "base64 0.21.0",
@@ -4005,11 +3984,10 @@ dependencies = [
  "prost",
  "rand 0.7.3",
  "reqwest",
- "rs-cnc",
+ "rs-cnc 0.1.0 (git+https://github.com/astriaorg/rs-cnc.git?rev=07d00be)",
  "sequencer-relayer-proto",
  "serde",
  "serde_json",
- "serde_with",
  "sha2 0.10.6",
  "tendermint",
  "tokio",
@@ -4020,7 +3998,7 @@ dependencies = [
 [[package]]
 name = "sequencer-relayer-proto"
 version = "0.1.0"
-source = "git+https://github.com/astriaorg/sequencer-relayer?rev=b79f95800ae0e3c3b3faa3bcc7a138ec5eb3f48d#b79f95800ae0e3c3b3faa3bcc7a138ec5eb3f48d"
+source = "git+https://github.com/astriaorg/sequencer-relayer?rev=8cd9b9e4268368c48ab3be02d9fa85b46914a32e#8cd9b9e4268368c48ab3be02d9fa85b46914a32e"
 dependencies = [
  "prost",
  "prost-build",
@@ -4097,34 +4075,6 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
-]
-
-[[package]]
-name = "serde_with"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f02d8aa6e3c385bf084924f660ce2a3a6bd333ba55b35e8590b321f35d88513"
-dependencies = [
- "base64 0.21.0",
- "chrono",
- "hex",
- "indexmap",
- "serde",
- "serde_json",
- "serde_with_macros",
- "time 0.3.21",
-]
-
-[[package]]
-name = "serde_with_macros"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "edc7d5d3932fb12ce722ee5e64dd38c504efba37567f0c402f6ca728c3b8b070"
-dependencies = [
- "darling 0.20.1",
- "proc-macro2",
- "quote",
- "syn 2.0.15",
 ]
 
 [[package]]

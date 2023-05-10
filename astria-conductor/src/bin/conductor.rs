@@ -11,7 +11,10 @@ use astria_conductor::{
     logger,
 };
 use clap::Parser;
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{
+    eyre,
+    Result,
+};
 use figment::{
     providers::{
         Env,
@@ -68,12 +71,68 @@ async fn run() -> Result<()> {
 
     // spawn our driver
     let (alert_tx, mut alert_rx) = mpsc::unbounded_channel();
-    let mut driver = Driver::new(conf, alert_tx).await?;
+    let (mut driver, executor_join_handle, reader_join_handle) =
+        Driver::new(conf, alert_tx.clone()).await?;
     let driver_tx = driver.cmd_tx.clone();
 
     tokio::task::spawn(async move {
         if let Err(e) = driver.run().await {
             panic!("Driver error: {}", e)
+        }
+    });
+
+    tokio::task::spawn(async move {
+        select! {
+            res = reader_join_handle => {
+                match res {
+                    Ok(run_res) => {
+                        match run_res {
+                            Ok(_) => {
+                                _ = alert_tx.send(Alert::DriverError(eyre!(
+                                    "reader task exited unexpectedly"
+                                )));
+                            }
+                            Err(e) => {
+                                _ = alert_tx.send(Alert::DriverError(eyre!(
+                                    "reader exited with error: {}",
+                                    e
+                                )));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        _ = alert_tx.send(Alert::DriverError(eyre!(
+                            "received JoinError from reader task: {}",
+                            e
+                        )));
+                    }
+                }
+            }
+            res = executor_join_handle => {
+                match res {
+                    Ok(run_res) => {
+                        match run_res {
+                            Ok(_) => {
+                                _ = alert_tx.send(Alert::DriverError(eyre!(
+                                    "executor task exited unexpectedly"
+                                )));
+                            }
+                            Err(e) => {
+                                _ = alert_tx.send(Alert::DriverError(eyre!(
+                                    "executor exited with error: {}",
+                                    e
+                                )));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        _ = alert_tx.send(Alert::DriverError(eyre!(
+                            "received JoinError from executor task: {}",
+                            e
+                        )));
+                    }
+                }
+            }
         }
     });
 

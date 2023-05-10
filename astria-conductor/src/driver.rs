@@ -1,22 +1,13 @@
 //! The driver is the top-level coordinator that runs and manages all the components
 //! necessary for this reader/validator.
 
-use std::{
-    pin::Pin,
-    sync::Mutex,
-};
+use std::sync::Mutex;
 
 use color_eyre::eyre::{
     eyre,
     Result,
 };
-use futures::{
-    future::{
-        poll_fn,
-        FutureExt,
-    },
-    StreamExt,
-};
+use futures::StreamExt;
 use log::{
     debug,
     info,
@@ -37,10 +28,7 @@ use crate::reader::{
     ReaderCommand,
 };
 use crate::{
-    alert::{
-        Alert,
-        AlertSender,
-    },
+    alert::AlertSender,
     config::Config,
     executor,
     executor::ExecutorCommand,
@@ -73,40 +61,38 @@ pub struct Driver {
     /// The channel used to send messages to the reader task.
     #[cfg(feature = "reader")]
     reader_tx: reader::Sender,
-    #[cfg(feature = "reader")]
-    reader_join_handle: reader::JoinHandle,
 
     /// The channel used to send messages to the executor task.
     executor_tx: executor::Sender,
-    executor_join_handle: executor::JoinHandle,
 
     network: GossipNetwork,
-
-    alert_tx: AlertSender,
 
     is_shutdown: Mutex<bool>,
 }
 
 impl Driver {
-    pub async fn new(conf: Config, alert_tx: AlertSender) -> Result<Self> {
+    pub async fn new(
+        conf: Config,
+        alert_tx: AlertSender,
+    ) -> Result<(Self, executor::JoinHandle, reader::JoinHandle)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let (executor_join_handle, executor_tx) = executor::spawn(&conf, alert_tx.clone()).await?;
         #[cfg(feature = "reader")]
         let (reader_join_handle, reader_tx) = reader::spawn(&conf, executor_tx.clone()).await?;
 
-        Ok(Self {
-            cmd_tx: cmd_tx.clone(),
-            cmd_rx,
-            #[cfg(feature = "reader")]
-            reader_tx,
-            #[cfg(feature = "reader")]
-            reader_join_handle,
-            executor_tx,
+        Ok((
+            Self {
+                cmd_tx: cmd_tx.clone(),
+                cmd_rx,
+                #[cfg(feature = "reader")]
+                reader_tx,
+                executor_tx,
+                network: GossipNetwork::new(conf.bootnodes)?,
+                is_shutdown: Mutex::new(false),
+            },
             executor_join_handle,
-            network: GossipNetwork::new(conf.bootnodes)?,
-            alert_tx,
-            is_shutdown: Mutex::new(false),
-        })
+            reader_join_handle,
+        ))
     }
 
     /// Runs the Driver event loop.
@@ -152,35 +138,6 @@ impl Driver {
     }
 
     fn handle_driver_command(&mut self, cmd: DriverCommand) -> Result<()> {
-        // TODO: these are kind of janky, we might want to move to a polling-based architecture
-
-        #[cfg(feature = "reader")]
-        if let Some(Ok(res)) = poll_fn(|cx| {
-            Pin::new(&mut self.reader_join_handle)
-                .as_mut()
-                .poll_unpin(cx)
-        })
-        .now_or_never()
-        {
-            self.alert_tx.send(Alert::DriverError(eyre!(
-                "Reader task exited unexpectedly."
-            )))?;
-            return res;
-        }
-
-        if let Some(Ok(res)) = poll_fn(|cx| {
-            Pin::new(&mut self.executor_join_handle)
-                .as_mut()
-                .poll_unpin(cx)
-        })
-        .now_or_never()
-        {
-            self.alert_tx.send(Alert::DriverError(eyre!(
-                "Executor task exited unexpectedly."
-            )))?;
-            return res;
-        }
-
         match cmd {
             DriverCommand::Shutdown => {
                 self.shutdown()?;
