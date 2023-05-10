@@ -36,15 +36,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ansi_term"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d52a9bb7ec0cf484c551830a7ce27bd20d67eac647e1befb56b0be4ee39a55d2"
-dependencies = [
- "winapi",
-]
-
-[[package]]
 name = "anstream"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -154,7 +145,7 @@ dependencies = [
  "podman-api",
  "prost-types",
  "reqwest",
- "rs-cnc",
+ "rs-cnc 0.1.0 (git+https://github.com/astriaorg/rs-cnc.git)",
  "sequencer-relayer",
  "sequencer-relayer-proto",
  "serde",
@@ -165,7 +156,7 @@ dependencies = [
  "tokio",
  "tonic",
  "tracing",
- "tracing-subscriber 0.3.17",
+ "tracing-subscriber",
  "users",
  "uuid",
 ]
@@ -1328,9 +1319,9 @@ dependencies = [
 
 [[package]]
 name = "matchers"
-version = "0.0.1"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f099785f7595cc4b4553a174ce30dd7589ef93391ff414dbb67f62392b9e0ce1"
+checksum = "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
 dependencies = [
  "regex-automata",
 ]
@@ -1950,6 +1941,21 @@ dependencies = [
 [[package]]
 name = "rs-cnc"
 version = "0.1.0"
+source = "git+https://github.com/astriaorg/rs-cnc.git?rev=07d00be#07d00be1414c90064fe156da454415a9dc3d1c84"
+dependencies = [
+ "base64 0.21.0",
+ "bytes 1.4.0",
+ "eyre",
+ "hex",
+ "rand 0.8.5",
+ "reqwest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rs-cnc"
+version = "0.1.0"
 source = "git+https://github.com/astriaorg/rs-cnc.git#2ebf140778db12835eba686f6c5111eb429218e1"
 dependencies = [
  "base64 0.21.0",
@@ -2040,7 +2046,7 @@ dependencies = [
 [[package]]
 name = "sequencer-relayer"
 version = "0.1.0"
-source = "git+https://github.com/astriaorg/sequencer-relayer?branch=superfluffy/fix-cargo-env-var#3536467ade532ccd0ff185b4a5a6ddd171ae0d2d"
+source = "git+https://github.com/astriaorg/sequencer-relayer?rev=8fa5e01#8fa5e010a2dd798c0d01aa87f53003ba15f311ff"
 dependencies = [
  "axum",
  "base64 0.21.0",
@@ -2054,7 +2060,7 @@ dependencies = [
  "prost",
  "rand 0.7.3",
  "reqwest",
- "rs-cnc",
+ "rs-cnc 0.1.0 (git+https://github.com/astriaorg/rs-cnc.git?rev=07d00be)",
  "sequencer-relayer-proto",
  "serde",
  "serde_json",
@@ -2062,13 +2068,13 @@ dependencies = [
  "tendermint",
  "tokio",
  "tracing",
- "tracing-subscriber 0.2.25",
+ "tracing-subscriber",
 ]
 
 [[package]]
 name = "sequencer-relayer-proto"
 version = "0.1.0"
-source = "git+https://github.com/astriaorg/sequencer-relayer?branch=superfluffy/fix-cargo-env-var#3536467ade532ccd0ff185b4a5a6ddd171ae0d2d"
+source = "git+https://github.com/astriaorg/sequencer-relayer?rev=8fa5e01#8fa5e010a2dd798c0d01aa87f53003ba15f311ff"
 dependencies = [
  "prost",
  "prost-build",
@@ -2633,7 +2639,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d686ec1c0f384b1277f097b2f279a2ecc11afe8c133c1aabf036a27cb4cd206e"
 dependencies = [
  "tracing",
- "tracing-subscriber 0.3.17",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -2658,47 +2664,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "tracing-serde"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc6b213177105856957181934e4920de57730fc69bf42c37ee5bb664d406d9e1"
-dependencies = [
- "serde",
- "tracing-core",
-]
-
-[[package]]
-name = "tracing-subscriber"
-version = "0.2.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e0d2eaa99c3c2e41547cfa109e910a68ea03823cccad4a0525dcbc9b01e8c71"
-dependencies = [
- "ansi_term",
- "chrono",
- "lazy_static",
- "matchers",
- "regex",
- "serde",
- "serde_json",
- "sharded-slab",
- "smallvec",
- "thread_local",
- "tracing",
- "tracing-core",
- "tracing-log",
- "tracing-serde",
-]
-
-[[package]]
 name = "tracing-subscriber"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "30a651bc37f915e81f087d86e62a18eec5f79550c7faff886f7090b4ea757c77"
 dependencies = [
+ "matchers",
  "nu-ansi-term",
+ "once_cell",
+ "regex",
  "sharded-slab",
  "smallvec",
  "thread_local",
+ "tracing",
  "tracing-core",
  "tracing-log",
 ]
