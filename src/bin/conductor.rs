@@ -105,10 +105,10 @@ async fn run() -> Result<()> {
                         break;
                     }
                     Alert::BlockReceivedGossip{block_height} => {
-                        info!("block received from p2p network; height: {}", block_height);
+                        info!("sequencer block received from p2p network; height: {}", block_height);
                     }
                     Alert::BlockReceivedFromDA{block_height} => {
-                        info!("block received from DA layer; DA layer height: {}", block_height);
+                        info!("sequencer block received from DA layer; height: {}", block_height);
                     }
                 }
             }

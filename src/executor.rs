@@ -134,10 +134,6 @@ impl Executor {
                 ExecutorCommand::BlockReceivedGossip {
                     block,
                 } => {
-                    log::info!(
-                        "ExecutorCommand::BlockReceivedGossip height={}",
-                        block.header.height
-                    );
                     self.alert_tx.send(Alert::BlockReceivedGossip {
                         block_height: block.header.height.parse::<u64>()?,
                     })?;
@@ -147,10 +143,6 @@ impl Executor {
                 ExecutorCommand::BlockReceivedFromDA {
                     block,
                 } => {
-                    log::info!(
-                        "ExecutorCommand::BlockReceived height={}",
-                        block.header.height
-                    );
                     self.alert_tx.send(Alert::BlockReceivedFromDA {
                         block_height: block.header.height.parse::<u64>()?,
                     })?;
@@ -160,9 +152,16 @@ impl Executor {
                             self.execution_rpc_client
                                 .call_finalize_block(execution_block_hash.clone())
                                 .await?;
+                            log::info!(
+                                "finalized execution block {}",
+                                hex::encode(execution_block_hash),
+                            );
                         }
                         None => {
-                            log::error!(
+                            // this is fine; it means that the sequencer block didn't contain
+                            // any transactions for this rollup namespace, thus nothing was executed
+                            // on receiving this block, and we can ignore it.
+                            log::debug!(
                                 "ExecutorCommand::BlockReceived: no execution block hash found \
                                  for sequencer block hash {}",
                                 &block.block_hash,
@@ -183,17 +182,18 @@ impl Executor {
     /// Uses RPC to send block to execution service
     async fn execute_block(&mut self, block: SequencerBlock) -> Result<()> {
         let prev_block_hash = self.execution_state.clone();
-        info!(
-            "executing block {} with parent block hash {}",
-            block.header.height,
-            hex::encode(&prev_block_hash)
-        );
 
         // get transactions for our namespace
         let Some(txs) = block.rollup_txs.get(&self.namespace) else {
             info!("sequencer block {} did not contains txs for namespace", block.header.height);
             return Ok(());
         };
+
+        info!(
+            "executing block {} with parent block hash {}",
+            block.header.height,
+            hex::encode(&prev_block_hash)
+        );
 
         // parse cosmos sequencer transactions into rollup transactions
         // by converting them to SequencerMsgs and extracting the `data` field
@@ -226,6 +226,12 @@ impl Executor {
         self.execution_state = response.block_hash.clone();
 
         // store block hash returned by execution client, as we need it to finalize the block later
+        info!(
+            "executed sequencer block {} (height={}) with execution block hash {}",
+            block.block_hash,
+            block.header.height,
+            hex::encode(&response.block_hash)
+        );
         self.sequencer_hash_to_execution_hash
             .insert(block.block_hash, response.block_hash);
 
