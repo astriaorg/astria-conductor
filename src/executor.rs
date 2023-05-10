@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use color_eyre::eyre::Result;
 use log::{
+    debug,
     info,
     warn,
 };
@@ -152,7 +153,7 @@ impl Executor {
                             self.execution_rpc_client
                                 .call_finalize_block(execution_block_hash.clone())
                                 .await?;
-                            log::info!(
+                            info!(
                                 "finalized execution block {}",
                                 hex::encode(execution_block_hash),
                             );
@@ -161,7 +162,7 @@ impl Executor {
                             // this is fine; it means that the sequencer block didn't contain
                             // any transactions for this rollup namespace, thus nothing was executed
                             // on receiving this block, and we can ignore it.
-                            log::debug!(
+                            debug!(
                                 "ExecutorCommand::BlockReceived: no execution block hash found \
                                  for sequencer block hash {}",
                                 &block.block_hash,
