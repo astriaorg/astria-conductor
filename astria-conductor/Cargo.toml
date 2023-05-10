@@ -35,16 +35,7 @@ default-features = false
 features = ["rustls"]
 
 [dev-dependencies]
-askama = "0.12.0"
-once_cell = "1.17.1"
-podman-api = "0.10.0"
-tokio = { version = "1.24", features = [ "parking_lot", "sync", "time" ] }
-uuid = { version = "1.3.1", features = ["v4"] }
-
-[target.'cfg(target_os = "linux")'.dev-dependencies]
-users = "0.11.0"
-[target.'cfg(target_os = "macos")'.dev-dependencies]
-home = "0.5.4"
+astria-conductor-test = { path = "../astria-conductor-test" }
 
 [features]
 default = [ "reader" ]

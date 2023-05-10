@@ -319,7 +319,7 @@ dependencies = [
 name = "astria-conductor"
 version = "0.1.0"
 dependencies = [
- "askama",
+ "astria-conductor-test",
  "astria-execution-apis-rpc",
  "bech32",
  "clap",
@@ -330,10 +330,7 @@ dependencies = [
  "futures",
  "gossipnet",
  "hex",
- "home",
  "log",
- "once_cell",
- "podman-api",
  "prost-types",
  "reqwest",
  "rs-cnc",
@@ -348,8 +345,6 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-subscriber",
- "users",
- "uuid",
 ]
 
 [[package]]
