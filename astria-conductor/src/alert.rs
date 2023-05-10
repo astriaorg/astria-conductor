@@ -14,13 +14,13 @@ pub(crate) type AlertSender = UnboundedSender<Alert>;
 #[derive(Debug)]
 pub enum Alert {
     /// Send when a block has been received from the gossip network.
-    BlockReceivedGossip {
+    BlockReceivedFromGossipNetwork {
         /// The height of the block received
         block_height: u64,
     },
 
     /// Send when a block has been received from the data layer.
-    BlockReceivedFromDA {
+    BlockReceivedFromDataAvailability {
         /// The height of the block received
         block_height: u64,
     },

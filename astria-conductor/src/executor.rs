@@ -80,12 +80,12 @@ fn convert_str_to_prost_timestamp(value: &str) -> Result<ProstTimestamp> {
 #[derive(Debug)]
 pub enum ExecutorCommand {
     /// used when a block is received from the gossip network
-    BlockReceivedGossip {
+    BlockReceivedFromGossipNetwork {
         block: Box<SequencerBlock>,
     },
     /// used when a block is received from the reader (Celestia)
     #[cfg(feature = "reader")]
-    BlockReceivedFromDA {
+    BlockReceivedFromDataAvailability {
         block: Box<SequencerBlock>,
     },
     Shutdown,
@@ -105,7 +105,15 @@ struct Executor {
     /// Tracks the state of the execution chain
     execution_state: Vec<u8>,
 
-    /// Map of sequencer block hash to execution block hash
+    /// map of sequencer block hash to execution block hash
+    ///
+    /// this is required because when we receive sequencer blocks (from network or DA),
+    /// we only know the sequencer block hash, but not the execution block hash,
+    /// as the execution block hash is created by executing the block.
+    /// as well, the execution layer is not aware of the sequencer block hash.
+    /// we need to track the mapping of sequencer block hash -> execution block hash
+    /// so that we can mark the block as final on the execution layer when
+    /// we receive a finalized sequencer block.
     sequencer_hash_to_execution_hash: HashMap<Base64String, Vec<u8>>,
 }
 
@@ -138,43 +146,25 @@ impl Executor {
 
         while let Some(cmd) = self.cmd_rx.recv().await {
             match cmd {
-                ExecutorCommand::BlockReceivedGossip {
+                ExecutorCommand::BlockReceivedFromGossipNetwork {
                     block,
                 } => {
-                    self.alert_tx.send(Alert::BlockReceivedGossip {
+                    self.alert_tx.send(Alert::BlockReceivedFromGossipNetwork {
                         block_height: block.header.height.parse::<u64>()?,
                     })?;
                     self.execute_block(*block).await?;
                 }
                 #[cfg(feature = "reader")]
-                ExecutorCommand::BlockReceivedFromDA {
+                ExecutorCommand::BlockReceivedFromDataAvailability {
                     block,
                 } => {
-                    self.alert_tx.send(Alert::BlockReceivedFromDA {
-                        block_height: block.header.height.parse::<u64>()?,
-                    })?;
+                    self.alert_tx
+                        .send(Alert::BlockReceivedFromDataAvailability {
+                            block_height: block.header.height.parse::<u64>()?,
+                        })?;
 
-                    match self.sequencer_hash_to_execution_hash.get(&block.block_hash) {
-                        Some(execution_block_hash) => {
-                            self.execution_rpc_client
-                                .call_finalize_block(execution_block_hash.clone())
-                                .await?;
-                            info!(
-                                "finalized execution block {}",
-                                hex::encode(execution_block_hash),
-                            );
-                        }
-                        None => {
-                            // this is fine; it means that the sequencer block didn't contain
-                            // any transactions for this rollup namespace, thus nothing was executed
-                            // on receiving this block, and we can ignore it.
-                            debug!(
-                                "ExecutorCommand::BlockReceived: no execution block hash found \
-                                 for sequencer block hash {}",
-                                &block.block_hash,
-                            );
-                        }
-                    }
+                    self.handle_block_received_from_data_availability(*block)
+                        .await?;
                 }
                 ExecutorCommand::Shutdown => {
                     log::info!("Shutting down executor event loop.");
@@ -243,6 +233,36 @@ impl Executor {
         self.sequencer_hash_to_execution_hash
             .insert(block.block_hash, response.block_hash);
 
+        Ok(())
+    }
+
+    async fn handle_block_received_from_data_availability(
+        &mut self,
+        block: SequencerBlock,
+    ) -> Result<()> {
+        match self.sequencer_hash_to_execution_hash.get(&block.block_hash) {
+            Some(execution_block_hash) => {
+                self.execution_rpc_client
+                    .call_finalize_block(execution_block_hash.clone())
+                    .await?;
+                info!(
+                    "finalized execution block {}",
+                    hex::encode(execution_block_hash),
+                );
+                self.sequencer_hash_to_execution_hash
+                    .remove(&block.block_hash);
+            }
+            None => {
+                // this is fine; it means that the sequencer block didn't contain
+                // any transactions for this rollup namespace, thus nothing was executed
+                // on receiving this block, and we can ignore it.
+                debug!(
+                    "ExecutorCommand::BlockReceived: no execution block hash found for sequencer \
+                     block hash {}",
+                    &block.block_hash,
+                );
+            }
+        };
         Ok(())
     }
 }

@@ -165,10 +165,10 @@ async fn run() -> Result<()> {
                         error!("error: {}", error_string);
                         break;
                     }
-                    Alert::BlockReceivedGossip{block_height} => {
+                    Alert::BlockReceivedFromGossipNetwork{block_height} => {
                         info!("sequencer block received from p2p network; height: {}", block_height);
                     }
-                    Alert::BlockReceivedFromDA{block_height} => {
+                    Alert::BlockReceivedFromDataAvailability{block_height} => {
                         info!("sequencer block received from DA layer; height: {}", block_height);
                     }
                 }

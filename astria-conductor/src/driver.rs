@@ -127,7 +127,7 @@ impl Driver {
                 debug!("received gossip message: {:?}", msg);
                 let block = SequencerBlock::from_bytes(&msg.data)?;
                 self.executor_tx
-                    .send(ExecutorCommand::BlockReceivedGossip {
+                    .send(ExecutorCommand::BlockReceivedFromGossipNetwork {
                         block: Box::new(block),
                     })?;
             }
