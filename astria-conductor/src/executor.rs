@@ -6,6 +6,7 @@ use color_eyre::eyre::{
 };
 use log::{
     debug,
+    error,
     info,
     warn,
 };
@@ -152,7 +153,12 @@ impl Executor {
                     self.alert_tx.send(Alert::BlockReceivedFromGossipNetwork {
                         block_height: block.header.height.parse::<u64>()?,
                     })?;
-                    self.execute_block(*block).await?;
+                    match self.execute_block(*block).await {
+                        Ok(_) => {}
+                        Err(e) => {
+                            error!("failed to execute block: {}", e);
+                        }
+                    }
                 }
                 #[cfg(feature = "reader")]
                 ExecutorCommand::BlockReceivedFromDataAvailability {
@@ -163,8 +169,15 @@ impl Executor {
                             block_height: block.header.height.parse::<u64>()?,
                         })?;
 
-                    self.handle_block_received_from_data_availability(*block)
-                        .await?;
+                    match self
+                        .handle_block_received_from_data_availability(*block)
+                        .await
+                    {
+                        Ok(_) => {}
+                        Err(e) => {
+                            error!("failed to finalize block: {}", e);
+                        }
+                    }
                 }
                 ExecutorCommand::Shutdown => {
                     log::info!("Shutting down executor event loop.");
