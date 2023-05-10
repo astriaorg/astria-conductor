@@ -85,7 +85,6 @@ pub enum ExecutorCommand {
         block: Box<SequencerBlock>,
     },
     /// used when a block is received from the reader (Celestia)
-    #[cfg(feature = "reader")]
     BlockReceivedFromDataAvailability {
         block: Box<SequencerBlock>,
     },
@@ -160,7 +159,7 @@ impl Executor {
                         }
                     }
                 }
-                #[cfg(feature = "reader")]
+
                 ExecutorCommand::BlockReceivedFromDataAvailability {
                     block,
                 } => {

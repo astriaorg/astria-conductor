@@ -22,11 +22,6 @@ use tokio::{
     },
 };
 
-#[cfg(feature = "reader")]
-use crate::reader::{
-    self,
-    ReaderCommand,
-};
 use crate::{
     alert::AlertSender,
     config::Config,
@@ -35,6 +30,10 @@ use crate::{
     network::{
         Event as NetworkEvent,
         GossipNetwork,
+    },
+    reader::{
+        self,
+        ReaderCommand,
     },
 };
 
@@ -59,7 +58,6 @@ pub struct Driver {
     cmd_rx: Receiver,
 
     /// The channel used to send messages to the reader task.
-    #[cfg(feature = "reader")]
     reader_tx: reader::Sender,
 
     /// The channel used to send messages to the executor task.
@@ -77,14 +75,14 @@ impl Driver {
     ) -> Result<(Self, executor::JoinHandle, reader::JoinHandle)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let (executor_join_handle, executor_tx) = executor::spawn(&conf, alert_tx.clone()).await?;
-        #[cfg(feature = "reader")]
+
         let (reader_join_handle, reader_tx) = reader::spawn(&conf, executor_tx.clone()).await?;
 
         Ok((
             Self {
                 cmd_tx: cmd_tx.clone(),
                 cmd_rx,
-                #[cfg(feature = "reader")]
+
                 reader_tx,
                 executor_tx,
                 network: GossipNetwork::new(conf.bootnodes)?,
@@ -142,7 +140,7 @@ impl Driver {
             DriverCommand::Shutdown => {
                 self.shutdown()?;
             }
-            #[cfg(feature = "reader")]
+
             DriverCommand::GetNewBlocks => {
                 self.reader_tx
                     .send(ReaderCommand::GetNewBlocks)
@@ -162,7 +160,7 @@ impl Driver {
         *is_shutdown = true;
 
         info!("Shutting down driver.");
-        #[cfg(feature = "reader")]
+
         self.reader_tx.send(ReaderCommand::Shutdown)?;
         self.executor_tx.send(ExecutorCommand::Shutdown)?;
         Ok(())

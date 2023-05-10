@@ -36,7 +36,3 @@ features = ["rustls"]
 
 [dev-dependencies]
 astria-conductor-test = { path = "../astria-conductor-test" }
-
-[features]
-default = [ "reader" ]
-reader = []
