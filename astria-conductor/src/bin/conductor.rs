@@ -81,63 +81,54 @@ async fn run() -> Result<()> {
         }
     });
 
+    let executor_alert_tx = alert_tx.clone();
     tokio::task::spawn(async move {
-        select! {
-            res = reader_join_handle => {
-                match res {
-                    Ok(run_res) => {
-                        match run_res {
-                            Ok(_) => {
-                                _ = alert_tx.send(Alert::DriverError(eyre!(
-                                    "reader task exited unexpectedly"
-                                )));
-                            }
-                            Err(e) => {
-                                _ = alert_tx.send(Alert::DriverError(eyre!(
-                                    "reader exited with error: {}",
-                                    e
-                                )));
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        _ = alert_tx.send(Alert::DriverError(eyre!(
-                            "received JoinError from reader task: {}",
-                            e
-                        )));
-                    }
+        match executor_join_handle.await {
+            Ok(run_res) => match run_res {
+                Ok(_) => {
+                    _ = executor_alert_tx.send(Alert::DriverError(eyre!(
+                        "executor task exited unexpectedly"
+                    )));
                 }
-            }
-            res = executor_join_handle => {
-                match res {
-                    Ok(run_res) => {
-                        match run_res {
-                            Ok(_) => {
-                                _ = alert_tx.send(Alert::DriverError(eyre!(
-                                    "executor task exited unexpectedly"
-                                )));
-                            }
-                            Err(e) => {
-                                _ = alert_tx.send(Alert::DriverError(eyre!(
-                                    "executor exited with error: {}",
-                                    e
-                                )));
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        _ = alert_tx.send(Alert::DriverError(eyre!(
-                            "received JoinError from executor task: {}",
-                            e
-                        )));
-                    }
+                Err(e) => {
+                    _ = executor_alert_tx.send(Alert::DriverError(eyre!(
+                        "executor exited with error: {}",
+                        e
+                    )));
                 }
+            },
+            Err(e) => {
+                _ = executor_alert_tx.send(Alert::DriverError(eyre!(
+                    "received JoinError from executor task: {}",
+                    e
+                )));
             }
         }
     });
 
-    // NOTE - this will most likely be replaced by an RPC server that will receive gossip
-    //  messages from the sequencer
+    if reader_join_handle.is_some() {
+        tokio::task::spawn(async move {
+            match reader_join_handle.unwrap().await {
+                Ok(run_res) => match run_res {
+                    Ok(_) => {
+                        _ = alert_tx
+                            .send(Alert::DriverError(eyre!("reader task exited unexpectedly")));
+                    }
+                    Err(e) => {
+                        _ = alert_tx
+                            .send(Alert::DriverError(eyre!("reader exited with error: {}", e)));
+                    }
+                },
+                Err(e) => {
+                    _ = alert_tx.send(Alert::DriverError(eyre!(
+                        "received JoinError from reader task: {}",
+                        e
+                    )));
+                }
+            }
+        });
+    }
+
     let mut interval = time::interval(Duration::from_secs(3));
 
     loop {

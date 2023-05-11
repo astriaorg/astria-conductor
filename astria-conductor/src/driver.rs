@@ -58,7 +58,7 @@ pub struct Driver {
     cmd_rx: Receiver,
 
     /// The channel used to send messages to the reader task.
-    reader_tx: reader::Sender,
+    reader_tx: Option<reader::Sender>,
 
     /// The channel used to send messages to the executor task.
     executor_tx: executor::Sender,
@@ -72,17 +72,21 @@ impl Driver {
     pub async fn new(
         conf: Config,
         alert_tx: AlertSender,
-    ) -> Result<(Self, executor::JoinHandle, reader::JoinHandle)> {
+    ) -> Result<(Self, executor::JoinHandle, Option<reader::JoinHandle>)> {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let (executor_join_handle, executor_tx) = executor::spawn(&conf, alert_tx.clone()).await?;
 
-        let (reader_join_handle, reader_tx) = reader::spawn(&conf, executor_tx.clone()).await?;
+        let (reader_join_handle, reader_tx) = if conf.disable_finalization {
+            (None, None)
+        } else {
+            let (reader_join_handle, reader_tx) = reader::spawn(&conf, executor_tx.clone()).await?;
+            (Some(reader_join_handle), Some(reader_tx))
+        };
 
         Ok((
             Self {
                 cmd_tx: cmd_tx.clone(),
                 cmd_rx,
-
                 reader_tx,
                 executor_tx,
                 network: GossipNetwork::new(conf.bootnodes)?,
@@ -142,7 +146,11 @@ impl Driver {
             }
 
             DriverCommand::GetNewBlocks => {
-                self.reader_tx
+                let Some(reader_tx) = &self.reader_tx else {
+                    return Ok(());
+                };
+
+                reader_tx
                     .send(ReaderCommand::GetNewBlocks)
                     .map_err(|e| eyre!("reader rx channel closed: {}", e))?;
             }
@@ -160,9 +168,13 @@ impl Driver {
         *is_shutdown = true;
 
         info!("Shutting down driver.");
-
-        self.reader_tx.send(ReaderCommand::Shutdown)?;
         self.executor_tx.send(ExecutorCommand::Shutdown)?;
+
+        let Some(reader_tx) = &self.reader_tx else {
+            return Ok(());
+        };
+        reader_tx.send(ReaderCommand::Shutdown)?;
+
         Ok(())
     }
 }

@@ -22,6 +22,10 @@ pub struct Config {
     #[serde(default = "default_execution_rpc_url")]
     pub execution_rpc_url: String,
 
+    /// Disable reading from the DA layer and block finalization
+    #[serde(default = "default_disable_finalization")]
+    pub disable_finalization: bool,
+
     /// Bootnodes for the P2P network
     pub bootnodes: Vec<String>,
 }
@@ -43,4 +47,8 @@ fn default_chain_id() -> String {
 
 fn default_execution_rpc_url() -> String {
     "http://localhost:50051".to_string()
+}
+
+fn default_disable_finalization() -> bool {
+    false
 }
