@@ -152,11 +152,8 @@ impl Executor {
                     self.alert_tx.send(Alert::BlockReceivedFromGossipNetwork {
                         block_height: block.header.height.parse::<u64>()?,
                     })?;
-                    match self.execute_block(*block).await {
-                        Ok(_) => {}
-                        Err(e) => {
-                            error!("failed to execute block: {}", e);
-                        }
+                    if let Err(e) = self.execute_block(*block).await {
+                        error!("failed to execute block: {e:?}");
                     }
                 }
 
@@ -168,16 +165,14 @@ impl Executor {
                             block_height: block.header.height.parse::<u64>()?,
                         })?;
 
-                    match self
+                    if let Err(e) = self
                         .handle_block_received_from_data_availability(*block)
                         .await
                     {
-                        Ok(_) => {}
-                        Err(e) => {
-                            error!("failed to finalize block: {}", e);
-                        }
+                        error!("failed to finalize block: {}", e);
                     }
                 }
+
                 ExecutorCommand::Shutdown => {
                     log::info!("Shutting down executor event loop.");
                     break;
