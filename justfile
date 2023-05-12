@@ -28,10 +28,10 @@ wait-for-ingress-controller:
   kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=600s
 
 wait-for-prepull:
-  kubectl wait --for=condition=ready pod --selector=name=astria-conductor-environment-prepull --timeout=600s
+  kubectl wait --for=condition=ready pod --selector=name=conductor-environment-prepull --timeout=600s
 
 wait-for-test-environment:
-  kubectl wait -n test --for=condition=available deployment.apps/astria-conductor-environment-deployment --timeout=600s
+  kubectl wait -n test --for=condition=available deployment.apps/conductor-environment-deployment --timeout=600s
 
 kustomize:
   kubectl kustomize ./astria-conductor-test/kubernetes -o ./astria-conductor-test/kubernetes/test-environment.yml
