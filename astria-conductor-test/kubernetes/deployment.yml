@@ -102,7 +102,6 @@ spec:
               name: celestia-home-vol
           ports:
             - containerPort: 26657
-              hostPort: 26657
         - name: celestia-bridge
           command:
           - /scripts/start-bridge.sh
@@ -117,17 +116,14 @@ spec:
                 name: celestia-env
           ports:
             - containerPort: 26659
-              hostPort: 26659
               name: bridge-svc
         - name: metro-sequencer
           command: ["/scripts/start-metro.sh"]
           image: "ghcr.io/astriaorg/metro:0.0.3"
           ports:
             - containerPort: 1318
-              hostPort: 1318
               name: sequencer-svc
             - containerPort: 9100
-              hostPort: 9100
           volumeMounts:
             - mountPath: /scripts/
               name: metro-scripts-volume
@@ -166,9 +162,7 @@ spec:
                 name: geth-env
           ports:
             - containerPort: 8545
-              hostPort: 8545
             - containerPort: 50051
-              hostPort: 50051
       volumes:
       - name: bridge-scripts-volume
         configMap:

@@ -254,7 +254,6 @@ spec:
         name: celestia-app
         ports:
         - containerPort: 26657
-          hostPort: 26657
         volumeMounts:
         - mountPath: /scripts/
           name: celestia-appd-scripts-volume
@@ -269,7 +268,6 @@ spec:
         name: celestia-bridge
         ports:
         - containerPort: 26659
-          hostPort: 26659
           name: bridge-svc
         volumeMounts:
         - mountPath: /scripts/
@@ -285,10 +283,8 @@ spec:
         name: metro-sequencer
         ports:
         - containerPort: 1318
-          hostPort: 1318
           name: sequencer-svc
         - containerPort: 9100
-          hostPort: 9100
         volumeMounts:
         - mountPath: /scripts/
           name: metro-scripts-volume
@@ -317,9 +313,7 @@ spec:
         name: geth-executor
         ports:
         - containerPort: 8545
-          hostPort: 8545
         - containerPort: 50051
-          hostPort: 50051
         volumeMounts:
         - mountPath: /scripts/
           name: executor-scripts-volume
