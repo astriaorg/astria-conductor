@@ -355,9 +355,11 @@ dependencies = [
  "home",
  "once_cell",
  "podman-api",
+ "tempfile",
  "tokio",
  "users",
  "uuid",
+ "which",
 ]
 
 [[package]]
