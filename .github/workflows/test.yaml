@@ -31,7 +31,7 @@ jobs:
         uses: helm/kind-action@v1.5.0
         with:
           version: v0.18.0
-          config: sequencer-relayer-test/kubernetes/cluster-config.yml
+          config: astria-conductor-test/kubernetes/cluster-config.yml
           kubectl_version: v1.27.1
       - name: install just
         uses: taiki-e/install-action@just
