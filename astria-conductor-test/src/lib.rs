@@ -1,12 +1,34 @@
 use std::time::Duration;
 
-use k8s_openapi::api::{apps::v1::Deployment, core::v1::Namespace};
+use k8s_openapi::api::{
+    apps::v1::Deployment,
+    core::v1::Namespace,
+};
 use kube::{
-    api::{DeleteParams, DynamicObject, Patch, PatchParams, PostParams},
-    core::{GroupVersionKind, ObjectMeta},
-    discovery::{ApiCapabilities, ApiResource, Scope},
-    runtime::wait::{await_condition, Condition},
-    Api, Client, Discovery, ResourceExt,
+    api::{
+        DeleteParams,
+        DynamicObject,
+        Patch,
+        PatchParams,
+        PostParams,
+    },
+    core::{
+        GroupVersionKind,
+        ObjectMeta,
+    },
+    discovery::{
+        ApiCapabilities,
+        ApiResource,
+        Scope,
+    },
+    runtime::wait::{
+        await_condition,
+        Condition,
+    },
+    Api,
+    Client,
+    Discovery,
+    ResourceExt,
 };
 use once_cell::sync::Lazy;
 use tokio::sync::mpsc::UnboundedSender;
@@ -78,8 +100,10 @@ impl TestEnvironment {
             .run()
             .await
             .expect("should be able to run discovery against cluster");
-        let documents = multidoc_deserialize(TEST_ENVIRONMENT_YAML)
-            .expect("should have been able to deserialize valid kustomize generated yaml; rerun `just kustomize`?");
+        let documents = multidoc_deserialize(TEST_ENVIRONMENT_YAML).expect(
+            "should have been able to deserialize valid kustomize generated yaml; rerun `just \
+             kustomize`?",
+        );
 
         // Create the unique namespace
         create_namespace(
@@ -87,13 +111,13 @@ impl TestEnvironment {
             client.clone(),
             &PostParams {
                 dry_run: false,
-                field_manager: Some("sequencer-relayer-test".to_string()),
+                field_manager: Some("astria-conductor-test".to_string()),
             },
         )
         .await;
 
         // Apply the kustomize-generated kube yaml
-        let ssapply = PatchParams::apply("sequencer-relayer-test").force();
+        let ssapply = PatchParams::apply("astria-conductor-test").force();
         for doc in documents {
             apply_yaml_value(&namespace, client.clone(), doc, &ssapply, &discovery).await;
         }
@@ -114,7 +138,7 @@ impl TestEnvironment {
         let deployment_api: Api<Deployment> = Api::namespaced(client.clone(), &namespace);
         await_condition(
             deployment_api,
-            "sequencer-relayer-environment-deployment",
+            "conductor-environment-deployment",
             is_deployment_available(),
         )
         .await
@@ -154,7 +178,8 @@ impl Drop for TestEnvironment {
     fn drop(&mut self) {
         if let Err(e) = self.tx.send(self.namespace.clone()) {
             eprintln!(
-                "failed sending kubernetes namespace `{namespace}` to cleanup task while dropping TestEnvironment: {e:?}",
+                "failed sending kubernetes namespace `{namespace}` to cleanup task while dropping \
+                 TestEnvironment: {e:?}",
                 namespace = self.namespace,
             )
         }
@@ -190,8 +215,10 @@ async fn apply_yaml_value(
     ssapply: &PatchParams,
     discovery: &Discovery,
 ) {
-    let obj: DynamicObject = serde_yaml::from_value(document)
-        .expect("should have been able to read valid kustomize generated doc into dynamic object; rerun `just kustomize`?");
+    let obj: DynamicObject = serde_yaml::from_value(document).expect(
+        "should have been able to read valid kustomize generated doc into dynamic object; rerun \
+         `just kustomize`?",
+    );
     let gvk = if let Some(tm) = &obj.types {
         GroupVersionKind::try_from(tm)
             .expect("failed reading group version kind from dynamic object types")
