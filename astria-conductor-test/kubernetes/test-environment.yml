@@ -296,7 +296,7 @@ spec:
         - --validator-key-file=/root/.metro/config/priv_validator_key.json
         command:
         - /usr/local/bin/relayer
-        image: ghcr.io/astriaorg/sequencer-relayer:pr-44-debug
+        image: ghcr.io/astriaorg/sequencer-relayer:sha-574f422-debug
         name: relayer
         volumeMounts:
         - mountPath: /home/relayer
